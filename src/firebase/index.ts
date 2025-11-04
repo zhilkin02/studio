@@ -2,27 +2,40 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
+  const isDev = process.env.NODE_ENV === 'development';
   if (getApps().length) {
-    // If already initialized, return the SDKs with the already initialized App
     const app = getApp();
-    return getSdks(app);
+    return getSdks(app, isDev);
   }
 
-  // Initialize with the explicit config object
   const firebaseApp = initializeApp(firebaseConfig);
-  return getSdks(firebaseApp);
+  return getSdks(firebaseApp, isDev);
 }
 
-export function getSdks(firebaseApp: FirebaseApp) {
+export function getSdks(firebaseApp: FirebaseApp, isDev: boolean) {
+  const auth = getAuth(firebaseApp);
+  const firestore = getFirestore(firebaseApp);
+  
+  if (isDev && typeof window !== 'undefined' && !(auth as any).emulatorConfig) {
+    // В рабочей среде Next.js HMR может вызывать это несколько раз. 
+    // Проверяем, был ли эмулятор уже подключен.
+    try {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+      connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
+    } catch (e) {
+      // Игнорируем ошибки, если эмуляторы уже подключены.
+    }
+  }
+
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    auth,
+    firestore
   };
 }
 
