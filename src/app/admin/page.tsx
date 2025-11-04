@@ -11,6 +11,7 @@ import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getStorage, ref, deleteObject } from 'firebase/storage';
 
 
 interface PendingVideo {
@@ -75,7 +76,12 @@ function PendingVideosList() {
         setMutatingId(video.id);
 
         try {
-            // Поскольку мы больше не храним файлы, нужно просто удалить документ
+            // Delete file from Storage first
+            const storage = getStorage();
+            const fileRef = ref(storage, video.filePath); // filePath is the full URL
+            await deleteObject(fileRef);
+            
+            // Then delete the document from Firestore
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(pendingDocRef);
 
@@ -88,10 +94,10 @@ function PendingVideosList() {
 
         } catch (e: any) {
             console.error("Error rejecting video:", e);
-            toast({
+             toast({
                 variant: "destructive",
                 title: "Ошибка отклонения",
-                description: e.message,
+                description: "Не удалось удалить файл. Возможно, он уже был удален или у вас нет прав."
             });
         } finally {
             setMutatingId(null);
