@@ -1,47 +1,23 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Film } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-// This component will be updated to use Firebase Authentication.
-// For now, client-side cookie check remains for basic UI state.
-
-// Helper function to get cookie on the client
-function getCookie(name: string): string | undefined {
-  if (typeof window === 'undefined') {
-    return undefined;
-  }
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-      return parts.pop()?.split(';').shift();
-  }
-  return undefined;
-}
-
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const router = useRouter();
-  // This state will be replaced by Firebase Auth state.
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    // Check cookie on mount and update state
-    const session = getCookie('session');
-    // This logic will be replaced.
-    setIsAdmin(session === 'admin');
-  }, []);
-
-  const handleLogout = () => {
-    // This will be replaced by Firebase's signOut() method.
-    document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-    setIsAdmin(false);
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/');
-    router.refresh();
   };
+
+  const isAdmin = user && user.email === 'konk-media-archive@gmail.com';
 
   return (
     <header className="bg-background border-b border-border/50 sticky top-0 z-40">
@@ -51,11 +27,20 @@ export function Header() {
           <span>КоНК</span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/upload">
-            <Button variant="outline">Загрузить видео</Button>
-          </Link>
-          {isAdmin ? (
-            <Button variant="ghost" onClick={handleLogout}>Выйти</Button>
+          {isUserLoading ? (
+            <div className="h-10 w-24 bg-muted rounded-md animate-pulse" />
+          ) : user ? (
+            <>
+              {isAdmin && (
+                 <Link href="/admin">
+                    <Button variant="outline">Админ</Button>
+                  </Link>
+              )}
+              <Link href="/upload">
+                <Button variant="outline">Загрузить видео</Button>
+              </Link>
+              <Button variant="ghost" onClick={handleLogout}>Выйти</Button>
+            </>
           ) : (
             <Link href="/login">
                 <Button variant="ghost">Войти</Button>

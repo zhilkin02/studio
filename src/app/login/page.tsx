@@ -1,41 +1,51 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useAuth, useUser } from "@/firebase/provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect } from 'react';
+import { Chrome } from 'lucide-react';
 
 export default function LoginPage() {
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
 
-  // This component will be refactored to use Firebase Authentication.
-  // The old form logic is being removed.
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      router.push('/');
+    } catch (error) {
+      console.error("Ошибка входа через Google:", error);
+    }
+  };
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <p>Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-center items-center py-16">
-      <div className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-center">Вход</h1>
-        <p className="text-center text-muted-foreground">Эта страница будет скоро обновлена для использования Firebase Authentication.</p>
-        <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-                id="email" 
-                name="email" 
-                type="email" 
-                placeholder="admin@example.com"
-                disabled
-            />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
-            <Input 
-                id="password" 
-                name="password" 
-                type="password" 
-                placeholder="********"
-                disabled
-            />
-        </div>
-        <Button type="submit" className="w-full" disabled>
-          Войти
+      <div className="w-full max-w-sm space-y-6 text-center">
+        <h1 className="text-3xl font-bold">Вход в систему</h1>
+        <p className="text-muted-foreground">
+          Войдите с помощью Google, чтобы продолжить.
+        </p>
+        <Button onClick={handleGoogleSignIn} className="w-full">
+          <Chrome className="mr-2 h-5 w-5" />
+          Войти через Google
         </Button>
       </div>
     </div>

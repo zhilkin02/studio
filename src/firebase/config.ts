@@ -1,8 +1,9 @@
 export const firebaseConfig = {
-  "projectId": "studio-5312529026-9c024",
-  "appId": "1:1098574113497:web:ee21290cbd4c35904eecc8",
-  "apiKey": "AIzaSyD6E-U938BCYdT5dm5QVDGX73eyQkKYT1I",
-  "authDomain": "studio-5312529026-9c024.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "1098574113497"
+  apiKey: "AIzaSyCVho3YI4Q0mLIp5PzeM9mLxwGe77v6-84",
+  authDomain: "konk-media-archive.firebaseapp.com",
+  projectId: "konk-media-archive",
+  storageBucket: "konk-media-archive.appspot.com",
+  messagingSenderId: "715036389581",
+  appId: "1:715036389581:web:139719a635caf5dd1ff984",
+  measurementId: "G-WZMWD7EDPP"
 };
