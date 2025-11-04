@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Film } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+// This component will be updated to use Firebase Authentication.
+// For now, client-side cookie check remains for basic UI state.
+
 // Helper function to get cookie on the client
 function getCookie(name: string): string | undefined {
   if (typeof window === 'undefined') {
@@ -22,18 +25,19 @@ function getCookie(name: string): string | undefined {
 
 export function Header() {
   const router = useRouter();
+  // This state will be replaced by Firebase Auth state.
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Check cookie on mount and update state
     const session = getCookie('session');
+    // This logic will be replaced.
     setIsAdmin(session === 'admin');
   }, []);
 
   const handleLogout = () => {
-    // Clear session cookie
+    // This will be replaced by Firebase's signOut() method.
     document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-    // Update state and refresh UI
     setIsAdmin(false);
     router.push('/');
     router.refresh();
