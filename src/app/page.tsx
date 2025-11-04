@@ -6,8 +6,8 @@ import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { getFirestore, collection, query, orderBy, getDocs, Timestamp } from 'firebase-admin/firestore';
 
-// Define the type for our video data
-interface VideoFragment {
+// Define the type for our video data on the server
+interface VideoFragmentServer {
   id: string;
   title: string;
   description: string;
@@ -17,8 +17,17 @@ interface VideoFragment {
   status: string;
 }
 
+// Define the type for the props passed to the client component (serializable)
+interface VideoFragmentClient {
+    id: string;
+    title: string;
+    description: string;
+    filePath: string;
+}
+
+
 // Server-side function to fetch videos.
-async function getPublicVideos(): Promise<VideoFragment[]> {
+async function getPublicVideos(): Promise<VideoFragmentClient[]> {
   try {
     const { firestore } = initializeServerApp();
     const videosQuery = query(
@@ -26,26 +35,42 @@ async function getPublicVideos(): Promise<VideoFragment[]> {
       orderBy("uploadDate", "desc")
     );
     const querySnapshot = await getDocs(videosQuery);
-    const videos = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as VideoFragment));
+
+    // This is the correct way to handle an empty collection. It's not an error.
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    // Map server data to a serializable format for the client
+    const videos = querySnapshot.docs.map(doc => {
+        const data = doc.data() as VideoFragmentServer;
+        return {
+          id: doc.id,
+          title: data.title,
+          description: data.description,
+          filePath: data.filePath,
+        };
+    });
     return videos;
   } catch (error) {
     console.error("Error fetching public videos:", error);
+    // In case of a real error on the server, we return an empty array
+    // to prevent the page from crashing.
     return [];
   }
 }
 
 // A simple Client Component to display the videos
-function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
+function ApprovedVideos({ videos }: { videos: VideoFragmentClient[] }) {
   'use client';
 
   if (!videos || videos.length === 0) {
     return (
-      <div className="text-center py-16 border-2 border-dashed rounded-lg">
-        <p className="text-muted-foreground">Одобренных видеоклипов пока нет.</p>
-        <p className="text-sm text-muted-foreground">Загрузите видео и одобрите его в админ-панели, чтобы оно появилось здесь.</p>
+      <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
+        <h3 className="text-xl font-semibold text-foreground">Видео пока нет</h3>
+        <p className="text-muted-foreground mt-2">
+          Загрузите видео и одобрите его в админ-панели, чтобы оно появилось здесь.
+        </p>
       </div>
     );
   }
@@ -71,30 +96,6 @@ function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
 export default async function Home() {
   const videos = await getPublicVideos();
 
-  // The videos data is fetched on the server and passed to the client component as a prop.
-  // To ensure the Timestamp object from the server is usable on the client, we serialize it.
-  const serializableVideos = videos.map(video => ({
-    ...video,
-    // Convert Firestore Timestamp to a serializable format (e.g., ISO string)
-    uploadDate: video.uploadDate.toDate().toISOString(),
-  }));
-
-  // The client component will receive this as a plain JS object, not a class instance.
-  // So we adjust the type on the client side if needed, or just use the string.
-  // For simplicity, we'll let the client component handle the string.
-  // Let's adjust the ApprovedVideos prop type to expect a string for the date.
-  // Oh wait, the `ApprovedVideos` component doesn't even use the date. No change needed there.
-  // The VideoFragment interface here describes server data. The client component prop can be simpler.
-
-  const clientVideos = videos.map(video => ({
-    ...video,
-    uploadDate: { // Re-shape for client component if it were to use it.
-      seconds: video.uploadDate.seconds,
-      nanoseconds: video.uploadDate.nanoseconds
-    }
-  }));
-
-
   return (
     <div className="container mx-auto px-4 py-8">
       <section className="text-center py-16">
@@ -118,7 +119,7 @@ export default async function Home() {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
-        <ApprovedVideos videos={videos as any} />
+        <ApprovedVideos videos={videos} />
       </section>
     </div>
   );
