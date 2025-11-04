@@ -120,6 +120,8 @@ export default function UploadPage() {
                         });
 
                         form.reset();
+                        // Also reset the file input if possible. A bit tricky with react-hook-form.
+                        // A common way is to give the form a key and change it on reset.
                         setIsUploading(false);
                         router.push('/profile');
                     })
