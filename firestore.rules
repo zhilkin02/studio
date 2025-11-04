@@ -1,70 +1,29 @@
-/**
- * @fileOverview Firestore Security Rules for Konk Media Archive.
- *
- * Core Philosophy:
- * This ruleset prioritizes a secure, scalable, and maintainable backend by enforcing strict ownership and role-based access control.  It avoids complex data validation in favor of rapid prototyping but focuses intensely on authorization.  The rules are designed to be independent and avoid chained lookups.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
- * - /videoFragments/{videoId}: Stores publicly accessible video fragments. Write access is restricted to admins.
- * - /pendingVideoFragments/{videoId}: Stores video fragments awaiting admin approval. Only admins can read, and only owners can create.
- * - /roles_admin/{userId}: Presence of a document grants admin privileges to the corresponding user. The document content is irrelevant.
- *
- * Key Security Decisions:
- * - User data is private and only accessible by the user.
- * - Public videos are readable by anyone, but only admins can manage them.
- * - Pending videos are only visible to admins, but can be created by any signed-in user.
- * - Admin status is determined by the existence of a document in `/roles_admin/{userId}`, not a field in the user document.
- *
- * Denormalization for Authorization:
- * - Video fragments include an `uploaderId` field to enable simple ownership checks without additional reads.
- *
- * Structural Segregation:
- * - Approved and pending videos are stored in separate collections to avoid filtering and simplify access control.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Grants access to user profile based on ownership.
-     */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
-    /**
-     * @description Grants public read access to approved video fragments and restricts write access to admins.
-     */
     match /videoFragments/{videoId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if true;
       allow write: if isAdmin();
     }
 
-    /**
-     * @description Allows any signed-in user to create a pending fragment, but restricts management to admins.
-     */
     match /pendingVideoFragments/{videoId} {
       allow read, update, delete: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
       allow list: if isAdmin();
     }
 
-     /**
-      * @description Grants admin privileges to users with a document in this collection.
-      */
     match /roles_admin/{userId} {
-        allow get: if isOwner(userId);
-        allow list: if false; // Disallow listing all admins
-        allow create, delete: if isAdmin(); // Only admins can change other admins
-        allow update: if false;
+      allow get: if isOwner(userId);
+      allow list: if false; 
+      allow create, delete: if isAdmin();
+      allow update: if false;
     }
-
-    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -72,10 +31,6 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
     }
 
     function isAdmin() {
