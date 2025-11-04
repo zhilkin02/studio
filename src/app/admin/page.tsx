@@ -12,12 +12,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Helper to extract YouTube video ID from URL
+const getYouTubeId = (url: string) => {
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            return urlObj.pathname.slice(1);
+        }
+        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+            return urlObj.searchParams.get('v');
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+};
+
 
 interface PendingVideo {
     id: string;
     title: string;
     description: string;
-    filePath: string;
+    filePath: string; // This will be a YouTube URL
     uploaderId: string;
 }
 
@@ -31,7 +47,9 @@ function PendingVideosList() {
         return query(collection(firestore, 'pendingVideoFragments'), orderBy('uploadDate', 'desc'));
     }, [firestore]);
 
-    const { data: videos, loading, error, setData } = useCollection(pendingQuery);
+    // Note: useCollection's data is read-only. We need `setData` for optimistic updates.
+    const { data: videos, loading, error, setData } = useCollection(pendingQuery, { listen: true });
+
 
     const handleApprove = async (video: PendingVideo) => {
         if (!firestore) return;
@@ -56,7 +74,7 @@ function PendingVideosList() {
                 title: "Видео одобрено!",
                 description: `"${video.title}" теперь доступно для всех.`,
             });
-            if (setData) {
+             if (setData) {
               setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
             }
 
@@ -77,16 +95,17 @@ function PendingVideosList() {
         setMutatingId(video.id);
 
         try {
-            // Просто удаляем документ из Firestore, так как файл находится по внешней ссылке
+            // We only need to delete the Firestore document.
+            // The video remains on YouTube as 'unlisted' but is gone from our app.
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(pendingDocRef);
 
             toast({
                 title: "Видео отклонено",
-                description: `"${video.title}" было удалено.`,
+                description: `"${video.title}" было удалено из очереди модерации.`,
             });
-             // Оптимистическое обновление UI
-             if (setData) {
+            // Optimistic UI update
+            if (setData) {
               setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
             }
 
@@ -151,34 +170,49 @@ function PendingVideosList() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(videos as PendingVideo[]).map((video) => (
-                <Card key={video.id}>
-                    <CardHeader>
-                        <CardTitle className="truncate">{video.title}</CardTitle>
-                        <CardDescription className="line-clamp-3">{video.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <video controls src={video.filePath} className="w-full rounded-md aspect-video" preload="metadata" />
-                    </CardContent>
-                    <CardFooter className="flex justify-end gap-2">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => handleReject(video)}
-                            disabled={mutatingId === video.id}
-                        >
-                            {mutatingId === video.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-                            Отклонить
-                        </Button>
-                         <Button 
-                            onClick={() => handleApprove(video)}
-                            disabled={mutatingId === video.id}
-                         >
-                            {mutatingId === video.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                            Одобрить
-                        </Button>
-                    </CardFooter>
-                </Card>
-            ))}
+            {(videos as PendingVideo[]).map((video) => {
+                const videoId = getYouTubeId(video.filePath);
+                return (
+                    <Card key={video.id}>
+                        <CardHeader>
+                            <CardTitle className="truncate">{video.title}</CardTitle>
+                            <CardDescription className="line-clamp-3">{video.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {videoId ? (
+                                <iframe
+                                    src={`https://www.youtube.com/embed/${videoId}`}
+                                    title={video.title}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full rounded-md aspect-video"
+                                ></iframe>
+                            ) : (
+                                <div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center">
+                                    <p className="text-muted-foreground">Неверный URL видео</p>
+                                </div>
+                            )}
+                        </CardContent>
+                        <CardFooter className="flex justify-end gap-2">
+                            <Button 
+                                variant="outline" 
+                                onClick={() => handleReject(video)}
+                                disabled={mutatingId === video.id}
+                            >
+                                {mutatingId === video.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
+                                Отклонить
+                            </Button>
+                             <Button 
+                                onClick={() => handleApprove(video)}
+                                disabled={mutatingId === video.id}
+                             >
+                                {mutatingId === video.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                                Одобрить
+                             </Button>
+                        </CardFooter>
+                    </Card>
+                )
+            })}
         </div>
     );
 }

@@ -12,11 +12,27 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import React from "react";
 
+// Helper to extract YouTube video ID from URL
+const getYouTubeId = (url: string) => {
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            return urlObj.pathname.slice(1);
+        }
+        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+            return urlObj.searchParams.get('v');
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+};
+
 interface VideoFragment {
     id: string;
     title: string;
     description: string;
-    filePath: string;
+    filePath: string; // This will be a YouTube URL
 }
 
 function ApprovedVideos() {
@@ -72,17 +88,32 @@ function ApprovedVideos() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {(videos as VideoFragment[]).map((video) => (
-        <Card key={video.id}>
-          <CardHeader className="p-0">
-            <video controls src={video.filePath} className="w-full rounded-t-lg aspect-video" preload="metadata" />
-          </CardHeader>
-          <CardContent className="pt-4">
-            <h3 className="font-semibold text-lg truncate">{video.title}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
-          </CardContent>
-        </Card>
-      ))}
+      {(videos as VideoFragment[]).map((video) => {
+        const videoId = getYouTubeId(video.filePath);
+        return (
+          <Card key={video.id}>
+            <CardHeader className="p-0">
+               {videoId ? (
+                    <iframe
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title={video.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full rounded-t-lg aspect-video"
+                    ></iframe>
+                ) : (
+                    <div className="w-full rounded-t-lg aspect-video bg-muted flex items-center justify-center">
+                       <p className="text-muted-foreground text-sm">Неверный формат видео</p>
+                    </div>
+                )}
+            </CardHeader>
+            <CardContent className="pt-4">
+              <h3 className="font-semibold text-lg truncate">{video.title}</h3>
+              <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   );
 }

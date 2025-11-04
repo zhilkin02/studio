@@ -16,13 +16,10 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Loader2, UploadCloud } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().min(10, 'Описание должно быть не менее 10 символов.').max(500, 'Описание должно быть не более 500 символов.'),
+  description: z.string().min(10, 'Описание должно быть не менее 10 символов.').max(5000, 'Описание должно быть не более 5000 символов.'),
 });
 
 export default function UploadPage() {
@@ -32,7 +29,8 @@ export default function UploadPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0); // Not used for YouTube but kept for potential future use
+  const [uploadProgress, setUploadProgress] = useState(0); 
+  const [uploadMessage, setUploadMessage] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,7 +49,6 @@ export default function UploadPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Basic validation
       if (!file.type.startsWith('video/')) {
         toast({
           variant: "destructive",
@@ -66,56 +63,45 @@ export default function UploadPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Вы не авторизованы или база данных недоступна.",
-      });
+      toast({ variant: "destructive", title: "Ошибка", description: "Вы не авторизованы или база данных недоступна." });
       return;
     }
     if (!videoFile) {
-        toast({
-            variant: "destructive",
-            title: "Видеофайл не выбран",
-            description: "Пожалуйста, выберите видеофайл для загрузки.",
-        });
+        toast({ variant: "destructive", title: "Видеофайл не выбран", description: "Пожалуйста, выберите видеофайл для загрузки." });
         return;
     }
 
     setIsSubmitting(true);
-    setUploadProgress(10); // Indicate start
-
+    
     try {
-        // Convert file to base64 data URI
         const reader = new FileReader();
         reader.readAsDataURL(videoFile);
         reader.onload = async () => {
             const videoDataUri = reader.result as string;
             
-            toast({ title: "Начало загрузки...", description: "Отправка видео на сервер. Это может занять некоторое время." });
-            setUploadProgress(30);
+            setUploadMessage("Отправка видео на сервер...");
+            setUploadProgress(25);
 
-            // Call the server-side Genkit flow
             const result = await uploadVideoToYouTube({
                 title: values.title,
                 description: values.description,
                 videoDataUri: videoDataUri
             });
             
-            setUploadProgress(70);
+            setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
+            setUploadProgress(75);
 
             if (!result || !result.videoId) {
                 throw new Error(result.error || 'Не удалось получить ID видео от YouTube.');
             }
 
-            // Once uploaded to YouTube, save reference to Firestore
             const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
             const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
 
             const docData = {
                 title: values.title,
                 description: values.description,
-                filePath: youtubeUrl, // Store YouTube URL
+                filePath: youtubeUrl,
                 uploaderId: user.uid,
                 status: 'pending',
                 uploadDate: serverTimestamp(),
@@ -124,16 +110,15 @@ export default function UploadPage() {
             await addDoc(pendingCollectionRef, docData);
             
             setUploadProgress(100);
+            setUploadMessage("Готово!");
+
             toast({
                 title: "Успешно отправлено!",
                 description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
-                action: (
-                    <div className="flex items-center">
-                        <CheckCircle className="text-green-500 mr-2"/>
-                        <span>Отлично</span>
-                    </div>
-                )
+                action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
             });
+            
+            // Reset state and navigate
             form.reset();
             setVideoFile(null);
             router.push('/profile');
@@ -150,6 +135,7 @@ export default function UploadPage() {
             description: e.message || 'Произошла неизвестная ошибка.',
         });
         setUploadProgress(0);
+        setUploadMessage('');
     } finally {
         setIsSubmitting(false);
     }
@@ -168,7 +154,7 @@ export default function UploadPage() {
         <CardHeader>
           <CardTitle>Добавить новое видео</CardTitle>
           <CardDescription>
-            Выберите видеофайл и заполните форму ниже. Видео будет загружено на YouTube и отправлено на модерацию.
+            Выберите видеофайл и заполните форму. Видео будет загружено на ваш YouTube-канал как "невидимое" и отправлено на модерацию в приложении.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,7 +223,13 @@ export default function UploadPage() {
                 )}
               />
 
-              {isSubmitting && <Progress value={uploadProgress} className="w-full" />}
+              {isSubmitting && (
+                <div className="space-y-2">
+                    <Progress value={uploadProgress} className="w-full" />
+                    <p className="text-sm text-muted-foreground">{uploadMessage}</p>
+                </div>
+              )}
+
 
               <Button type="submit" disabled={isSubmitting || !videoFile}>
                 {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Загрузка...</> : 'Загрузить и отправить на модерацию'}
