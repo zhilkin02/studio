@@ -1,13 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Link from 'next/link';
 
 interface VideoFragment {
   id: string;
@@ -23,38 +22,19 @@ interface VideoFragment {
 
 function ApprovedVideos() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
 
   const approvedVideosQuery = useMemoFirebase(() => {
-    // CRITICAL: Only create the query if the user is loaded AND logged in.
-    if (isUserLoading || !user || !firestore) return null;
+    if (!firestore) return null;
     return query(collection(firestore, "videoFragments"), orderBy("uploadDate", "desc"));
-  }, [firestore, user, isUserLoading]);
+  }, [firestore]);
 
-  // The hook will now receive `null` and wait if the user is not logged in.
   const { data: videos, isLoading, error } = useCollection<VideoFragment>(approvedVideosQuery);
 
-  if (isUserLoading) {
-    return <div className="text-center py-16"><p className="text-muted-foreground">Загрузка...</p></div>;
-  }
-  
-  if (!user) {
-    return (
-      <div className="text-center py-16 border-2 border-dashed rounded-lg">
-        <p className="text-muted-foreground mb-2">Пожалуйста, войдите, чтобы просмотреть видео.</p>
-        <Button asChild>
-          <Link href="/login">Войти</Link>
-        </Button>
-      </div>
-    );
-  }
-  
   if (isLoading) {
     return <div className="text-center py-16"><p className="text-muted-foreground">Загрузка клипов...</p></div>;
   }
 
   if (error) {
-    // This error should now only appear for logged-in users if there's a real issue.
     return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки: {error.message}</p></div>;
   }
 
