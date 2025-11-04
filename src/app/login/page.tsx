@@ -1,10 +1,13 @@
 'use client';
 
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirebase } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 function GoogleIcon() {
     return (
@@ -15,18 +18,23 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { auth } = useFirebase();
+  const auth = useAuth();
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth) {
+        setError("Сервис аутентификации еще не инициализирован.");
+        return;
+    };
+    setError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
       router.push('/profile');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      // You might want to show a toast notification here
+      setError(`Ошибка входа: ${error.code} - ${error.message}`);
     }
   };
 
@@ -39,11 +47,19 @@ export default function LoginPage() {
             Войдите, чтобы загружать свои видеофрагменты.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Ошибка аутентификации</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <Button
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignIn}
+            disabled={!auth}
           >
             <GoogleIcon />
             Войти через Google
