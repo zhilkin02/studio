@@ -15,7 +15,8 @@ service cloud.firestore {
 
     // Эта коллекция предназначена для публичного отображения и доступна всем.
     match /publicVideoFragments/{videoId} {
-      allow get, list: if true; // Разрешаем чтение и листинг всем
+      allow get: if true;
+      allow list: if true; // Разрешаем чтение и листинг всем
       allow write: if isAdmin(); // Только админы могут сюда писать
     }
 
