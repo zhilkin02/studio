@@ -42,7 +42,7 @@ service cloud.firestore {
      */
     match /videoFragments/{videoId} {
       allow get: if true;
-      allow list: if true;
+      allow list: if isSignedIn();
       allow write: if isAdmin();
     }
 

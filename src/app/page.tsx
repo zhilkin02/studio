@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,19 +22,30 @@ interface VideoFragment {
 
 function ApprovedVideos() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
   const approvedVideosQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Wait until the user's auth state is loaded before creating the query.
+    if (isUserLoading || !firestore) return null;
     return query(collection(firestore, "videoFragments"), orderBy("uploadDate", "desc"));
-  }, [firestore]);
+  }, [firestore, isUserLoading]);
 
   const { data: videos, isLoading, error } = useCollection<VideoFragment>(approvedVideosQuery);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <div className="text-center py-16"><p className="text-muted-foreground">Загрузка клипов...</p></div>;
   }
 
   if (error) {
     return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки: {error.message}</p></div>;
+  }
+  
+  if (!user) {
+    return (
+      <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <p className="text-muted-foreground">Пожалуйста, войдите, чтобы просмотреть видео.</p>
+      </div>
+    );
   }
 
   if (!videos || videos.length === 0) {
