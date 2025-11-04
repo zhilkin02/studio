@@ -3,6 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { db, storage } from '@/lib/firebase'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
  
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin'
  
@@ -43,23 +46,35 @@ export async function uploadVideo(prevState: { error?: string; successMessage?: 
         return { error: 'Все поля обязательны для заполнения.' }
     }
 
-    if (isAdmin) {
-        // TODO: Implement actual file storage and database record creation for approved video
-        console.log('Видео загружено администратором и опубликовано:');
-        console.log('Название:', title);
-        console.log('Описание:', description);
-        console.log('Файл:', video.name, `${(video.size / 1024 / 1024).toFixed(2)} MB`);
-        
-        revalidatePath('/upload');
-        return { successMessage: 'Видео успешно загружено и опубликовано.' };
-    } else {
-        // TODO: Implement file storage for moderation queue and database record creation
-        console.log('Получено видео на модерацию:');
-        console.log('Название:', title);
-        console.log('Описание:', description);
-        console.log('Файл:', video.name, `${(video.size / 1024 / 1024).toFixed(2)} MB`);
+    try {
+        // 1. Upload video to Firebase Storage
+        const videoRef = ref(storage, `videos/${Date.now()}_${video.name}`);
+        const snapshot = await uploadBytes(videoRef, video);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        // 2. Save video metadata to Firestore
+        const videoData = {
+            title,
+            description,
+            downloadURL,
+            storagePath: snapshot.ref.fullPath,
+            status: isAdmin ? 'approved' : 'pending',
+            createdAt: serverTimestamp(),
+            uploader: isAdmin ? 'admin' : 'user',
+        };
+
+        await addDoc(collection(db, 'videos'), videoData);
 
         revalidatePath('/upload');
-        return { successMessage: 'Видео отправлено на модерацию. Спасибо!' };
+
+        if (isAdmin) {
+            return { successMessage: 'Видео успешно загружено и опубликовано.' };
+        } else {
+            return { successMessage: 'Видео отправлено на модерацию. Спасибо!' };
+        }
+
+    } catch (e: any) {
+        console.error("Error uploading video: ", e);
+        return { error: `Ошибка при загрузке видео: ${e.message}` };
     }
 }
