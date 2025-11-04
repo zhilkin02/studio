@@ -15,10 +15,10 @@ export function UploadForm() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state?.success) {
+    if (state?.successMessage) {
       toast({
         title: "Успешно!",
-        description: "Видео отправлено на модерацию.",
+        description: state.successMessage,
       });
       formRef.current?.reset();
     }
@@ -57,7 +57,7 @@ export function UploadForm() {
       </div>
       <Button type="submit" className="w-full">
         <Upload className="mr-2" />
-        Загрузить и отправить на модерацию
+        Загрузить и отправить
       </Button>
     </form>
   );

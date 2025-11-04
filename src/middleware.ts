@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   
-  const protectedRoutes = ['/upload']; 
+  // Example of a protected route, e.g. an admin dashboard for moderation
+  const protectedRoutes = ['/admin']; 
 
   const isProtectedRoute = protectedRoutes.some(path => request.nextUrl.pathname.startsWith(path));
 

@@ -17,22 +17,19 @@ export function Header() {
           <span>КоНК</span>
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/upload">
+            <Button variant="outline">Загрузить видео</Button>
+          </Link>
           {isAdmin ? (
             <>
-              <Link href="/upload">
-                <Button variant="outline">Загрузить видео</Button>
-              </Link>
               <form action={logout}>
                 <Button variant="ghost" type="submit">Выйти</Button>
               </form>
             </>
           ) : (
-            <>
-                <Link href="/login">
-                    <Button variant="ghost">Войти</Button>
-                </Link>
-                <Button variant="outline" disabled>Загрузить видео</Button>
-            </>
+            <Link href="/login">
+                <Button variant="ghost">Войти</Button>
+            </Link>
           )}
         </div>
       </div>
