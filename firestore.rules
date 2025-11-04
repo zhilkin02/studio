@@ -36,9 +36,11 @@ service cloud.firestore {
     }
 
     // --- Admin Roles ---
-    // Only other admins can view or change admin roles.
+    // A user can check if they are an admin.
+    // Only other admins can view the full list or change admin roles.
     match /roles_admin/{userId} {
-      allow read, write: if isAdmin();
+      allow get: if isOwner(userId);
+      allow list, create, update, delete: if isAdmin();
     }
     
     // --- Original Video Fragments (Internal) ---
