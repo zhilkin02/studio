@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,34 +39,23 @@ function PendingVideosList() {
 
         try {
             const batch = writeBatch(firestore);
-
-            // 1. Reference to the original pending document
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
-            
-            // 2. Reference to the new public document
             const publicDocRef = doc(firestore, 'publicVideoFragments', video.id);
 
-            // 3. Get the data from the pending doc to copy it
             const pendingDocSnap = await getDoc(pendingDocRef);
             if (!pendingDocSnap.exists()) {
                 throw new Error("Pending document not found.");
             }
             const videoData = pendingDocSnap.data();
 
-            // 4. Set the new public document with the data
             batch.set(publicDocRef, { ...videoData, status: 'approved' });
-
-            // 5. Delete the original pending document
             batch.delete(pendingDocRef);
-
-            // 6. Commit the batch
             await batch.commit();
 
             toast({
                 title: "Видео одобрено!",
                 description: `"${video.title}" теперь доступно для всех.`,
             });
-            // Optimistically update the UI
             setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
 
         } catch (e: any) {
@@ -87,15 +75,9 @@ function PendingVideosList() {
         setMutatingId(video.id);
 
         try {
-            // 1. Delete the Firestore document
+            // Поскольку мы больше не храним файлы, нужно просто удалить документ
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(pendingDocRef);
-
-            // 2. Delete the video file from Storage
-            const storage = getStorage();
-            // Create a reference from the download URL
-            const fileRef = ref(storage, video.filePath);
-            await deleteObject(fileRef);
 
             toast({
                 title: "Видео отклонено",
@@ -106,19 +88,11 @@ function PendingVideosList() {
 
         } catch (e: any) {
             console.error("Error rejecting video:", e);
-            // Handle cases where file might not exist in storage etc.
-            if (e.code === 'storage/object-not-found') {
-                 toast({
-                    title: "Видео отклонено (документ удален)",
-                    description: "Файл в хранилище не был найден, но запись была удалена.",
-                });
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Ошибка отклонения",
-                    description: e.message,
-                });
-            }
+            toast({
+                variant: "destructive",
+                title: "Ошибка отклонения",
+                description: e.message,
+            });
         } finally {
             setMutatingId(null);
         }
