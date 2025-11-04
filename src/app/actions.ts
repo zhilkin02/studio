@@ -1,4 +1,4 @@
-'use server'
- 
+'use server';
+
 // This file is intentionally left blank.
-// All backend logic will be handled by client-side Firebase calls.
+// All backend logic is handled by client-side Firebase calls or Cloud Functions.
