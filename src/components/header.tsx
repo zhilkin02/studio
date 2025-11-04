@@ -1,24 +1,9 @@
 "use client";
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Film } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 export function Header() {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const isAdmin = useAdminStatus();
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/');
-  };
-
   return (
     <header className="bg-background border-b border-border/50 sticky top-0 z-40">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
@@ -27,25 +12,7 @@ export function Header() {
           <span>КоНК</span>
         </Link>
         <div className="flex items-center gap-4">
-          {isUserLoading ? (
-            <div className="h-10 w-24 bg-muted rounded-md animate-pulse" />
-          ) : user ? (
-            <>
-              {isAdmin && (
-                 <Link href="/admin">
-                    <Button variant="outline">Админ</Button>
-                  </Link>
-              )}
-              <Link href="/upload">
-                <Button variant="outline">Загрузить видео</Button>
-              </Link>
-              <Button variant="ghost" onClick={handleLogout}>Выйти</Button>
-            </>
-          ) : (
-            <Link href="/login">
-                <Button variant="ghost">Войти</Button>
-            </Link>
-          )}
+          {/* Auth buttons removed */}
         </div>
       </div>
     </header>

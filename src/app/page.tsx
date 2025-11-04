@@ -1,46 +1,25 @@
 'use client';
 
-import { useMemo } from 'react';
-import { collection, query, orderBy, Firestore } from 'firebase/firestore';
-import { useFirestore, useCollection } from '@/firebase';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { publicVideos } from '@/lib/static-data';
 
-// Define the type for the props passed to the client component (serializable)
-interface VideoFragmentClient {
+interface VideoFragment {
     id: string;
     title: string;
     description: string;
     filePath: string;
 }
 
-// A simple Client Component to display the videos
-function ApprovedVideos() {
-  const firestore = useFirestore() as Firestore;
-
-  const publicVideosQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'publicVideoFragments'), orderBy('uploadDate', 'desc'));
-  }, [firestore]);
-
-  const { data: videos, isLoading, error } = useCollection<VideoFragmentClient>(publicVideosQuery);
-
-  if (isLoading) {
-    return <p>Загрузка видео...</p>;
-  }
-
-  if (error) {
-    return <p className="text-destructive">Ошибка загрузки видео: {error.message}</p>;
-  }
-
+function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
   if (!videos || videos.length === 0) {
     return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
         <h3 className="text-xl font-semibold text-foreground">Видео пока нет</h3>
         <p className="text-muted-foreground mt-2">
-          Загрузите видео и одобрите его в админ-панели, чтобы оно появилось здесь.
+          В данный момент нет доступных видео.
         </p>
       </div>
     );
@@ -63,7 +42,6 @@ function ApprovedVideos() {
   );
 }
 
-// The main page component is now an async Server Component
 export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -88,7 +66,7 @@ export default function Home() {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
-        <ApprovedVideos />
+        <ApprovedVideos videos={publicVideos} />
       </section>
     </div>
   );
