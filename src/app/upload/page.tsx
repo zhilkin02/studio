@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, AlertCircle, UploadCloud } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Label } from '@/components/ui/label';
 
 
 const formSchema = z.object({
