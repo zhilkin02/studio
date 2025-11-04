@@ -6,11 +6,13 @@ import { useAuth, useUser } from '@/firebase/provider';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 import { Chrome } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -23,9 +25,21 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       router.push('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Authentication Error Details:", error);
-      alert(`Произошла ошибка аутентификации. Подробности в консоли разработчика. Код: ${(error as any).code}`);
+      
+      let description = 'Произошла неизвестная ошибка. Пожалуйста, попробуйте еще раз.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        description = 'Окно входа было закрыто. Убедитесь, что всплывающие окна разрешены в вашем браузере, и попробуйте снова.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        description = 'Этот домен не авторизован для входа. Обратитесь к администратору.';
+      }
+
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка аутентификации',
+        description: description,
+      });
     }
   };
 

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, Firestore } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,7 @@ interface VideoFragment {
 }
 
 export function PendingVideos() {
-  const firestore = useFirestore();
+  const firestore = useFirestore() as Firestore;
   const { toast } = useToast();
 
   const pendingVideosQuery = useMemo(() => {
@@ -39,11 +39,11 @@ export function PendingVideos() {
         title: 'Успех',
         description: `Видео "${video.title}" одобрено.`,
       });
-    } catch (e) {
+    } catch (e: any) {
         toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: 'Не удалось одобрить видео.',
+        description: e.message || 'Не удалось одобрить видео.',
       });
     }
   };
@@ -55,11 +55,11 @@ export function PendingVideos() {
         title: 'Успех',
         description: `Видео "${video.title}" отклонено.`,
       });
-    } catch(e) {
+    } catch(e: any) {
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: 'Не удалось отклонить видео.',
+        description: e.message || 'Не удалось отклонить видео.',
       });
     }
   };
