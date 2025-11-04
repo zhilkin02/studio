@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, orderBy, Firestore } from 'firebase/firestore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -20,12 +20,15 @@ interface VideoFragment {
   status: string;
 }
 
+/**
+ * Компонент для отображения одобренных видео из коллекции 'publicVideoFragments'.
+ */
 function ApprovedVideos() {
-  const firestore = useFirestore();
+  const firestore = useFirestore() as Firestore;
 
-  const approvedVideosQuery = useMemoFirebase(() => {
+  // Создаем memoized-запрос к публичной коллекции.
+  const approvedVideosQuery = useMemo(() => {
     if (!firestore) return null;
-    // Query the new public collection
     return query(collection(firestore, "publicVideoFragments"), orderBy("uploadDate", "desc"));
   }, [firestore]);
 
@@ -36,14 +39,14 @@ function ApprovedVideos() {
   }
 
   if (error) {
-    return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки: {error.message}</p></div>;
+    return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки видео. Проверьте правила безопасности Firestore.</p></div>;
   }
 
   if (!videos || videos.length === 0) {
     return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg">
         <p className="text-muted-foreground">Одобренных видеоклипов пока нет.</p>
-        <p className="text-sm text-muted-foreground">Загрузите видео и одобрите его в админ-панели.</p>
+        <p className="text-sm text-muted-foreground">Загрузите видео и одобрите его в админ-панели, чтобы оно появилось здесь.</p>
       </div>
     );
   }

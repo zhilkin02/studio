@@ -6,23 +6,27 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // Эта коллекция содержит все видео, но не предназначена для публичного листинга.
     match /videoFragments/{videoId} {
       allow get: if true;
-      allow list: if false; // Explicitly disallow listing from the main collection
+      allow list: if false; // Явно запрещаем листинг
       allow write: if isAdmin();
     }
 
+    // Эта коллекция предназначена для публичного отображения и доступна всем.
     match /publicVideoFragments/{videoId} {
-      allow get, list: if true; // Allow public read access
-      allow write: if isAdmin(); // Only admins can write to it
+      allow get, list: if true; // Разрешаем чтение и листинг всем
+      allow write: if isAdmin(); // Только админы могут сюда писать
     }
 
+    // Здесь хранятся видео, ожидающие модерации.
     match /pendingVideoFragments/{videoId} {
       allow read, update, delete: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
       allow list: if isAdmin();
     }
 
+    // Коллекция для определения ролей администраторов.
     match /roles_admin/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; 
