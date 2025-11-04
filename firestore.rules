@@ -41,7 +41,8 @@ service cloud.firestore {
      * @description Grants public read access to approved video fragments and restricts write access to admins.
      */
     match /videoFragments/{videoId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
       allow create, update, delete: if isAdmin();
     }
 
