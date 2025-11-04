@@ -1,13 +1,43 @@
+"use client";
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Film } from 'lucide-react';
-import { cookies } from 'next/headers';
-import { logout } from '@/app/actions';
+import { useEffect, useState } from 'react';
+
+// Helper function to get cookie on the client
+function getCookie(name: string): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+      return parts.pop()?.split(';').shift();
+  }
+  return undefined;
+}
+
 
 export function Header() {
-  const cookieStore = cookies();
-  const session = cookieStore.get('session')?.value;
-  const isAdmin = session === 'admin';
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check cookie on mount and update state
+    const session = getCookie('session');
+    setIsAdmin(session === 'admin');
+  }, []);
+
+  const handleLogout = () => {
+    // Clear session cookie
+    document.cookie = 'session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    // Update state and refresh UI
+    setIsAdmin(false);
+    router.push('/');
+    router.refresh();
+  };
 
   return (
     <header className="bg-background border-b border-border/50 sticky top-0 z-40">
@@ -21,11 +51,7 @@ export function Header() {
             <Button variant="outline">Загрузить видео</Button>
           </Link>
           {isAdmin ? (
-            <>
-              <form action={logout}>
-                <Button variant="ghost" type="submit">Выйти</Button>
-              </form>
-            </>
+            <Button variant="ghost" onClick={handleLogout}>Выйти</Button>
           ) : (
             <Link href="/login">
                 <Button variant="ghost">Войти</Button>
