@@ -7,12 +7,12 @@ import { useDoc } from './firestore/use-doc';
 import { useUser } from './auth/use-user';
 import {
   FirebaseProvider,
-  FirebaseClientProvider,
   useFirebase,
   useFirebaseApp,
   useFirestore,
   useAuth,
 } from './provider';
+import { FirebaseClientProvider } from './client-provider';
 
 function initializeFirebase() {
   let app: FirebaseApp;
