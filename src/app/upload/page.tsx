@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { useFirestore } from '@/firebase';
@@ -71,68 +71,78 @@ export default function UploadPage() {
     const uniqueFileName = `${user.uid}/${uuidv4()}-${videoFile.name}`;
     const storageRef = ref(storage, `videos/${uniqueFileName}`);
 
-    try {
-        // Imitate progress for now
-        setUploadProgress(25);
-        const snapshot = await uploadBytes(storageRef, videoFile);
-        setUploadProgress(75);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        setUploadProgress(90);
+    const uploadTask = uploadBytesResumable(storageRef, videoFile);
 
-        const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
-        
-        const docData = {
-            title: values.title,
-            description: values.description,
-            filePath: downloadURL,
-            uploaderId: user.uid,
-            status: 'pending',
-            uploadDate: serverTimestamp(),
-        };
-
-        addDoc(pendingCollectionRef, docData)
-         .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-              path: pendingCollectionRef.path,
-              operation: 'create',
-              requestResourceData: docData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-
-        setUploadProgress(100);
-
-        toast({
-            title: "Успешно загружено!",
-            description: "Ваше видео отправлено на модерацию.",
-            action: (
-                <div className="flex items-center">
-                    <CheckCircle className="text-green-500 mr-2"/>
-                    <span>Отлично</span>
-                </div>
-            )
-        });
-
-        form.reset();
-        router.push('/profile');
-
-    } catch (error: any) {
-        console.error("Error uploading video:", error);
-        toast({
-            variant: "destructive",
-            title: "Ошибка загрузки",
-            description: `Не удалось загрузить видео: ${error.message}`,
-            action: (
+    uploadTask.on('state_changed',
+        (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+        },
+        (error) => {
+            console.error("Error uploading video:", error);
+            toast({
+                variant: "destructive",
+                title: "Ошибка загрузки",
+                description: `Не удалось загрузить видео: ${error.message}`,
+                 action: (
                  <div className="flex items-center">
                     <AlertCircle className="text-white mr-2"/>
                     <span>Попробуйте еще раз</span>
                 </div>
             )
-        });
-    } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-    }
+            });
+            setIsUploading(false);
+            setUploadProgress(0);
+        },
+        () => {
+            getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
+                
+                const docData = {
+                    title: values.title,
+                    description: values.description,
+                    filePath: downloadURL,
+                    uploaderId: user.uid,
+                    status: 'pending',
+                    uploadDate: serverTimestamp(),
+                };
+
+                try {
+                   await addDoc(pendingCollectionRef, docData)
+                } catch(serverError) {
+                    const permissionError = new FirestorePermissionError({
+                      path: pendingCollectionRef.path,
+                      operation: 'create',
+                      requestResourceData: docData,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                }
+
+                toast({
+                    title: "Успешно загружено!",
+                    description: "Ваше видео отправлено на модерацию.",
+                    action: (
+                        <div className="flex items-center">
+                            <CheckCircle className="text-green-500 mr-2"/>
+                            <span>Отлично</span>
+                        </div>
+                    )
+                });
+
+                form.reset();
+                setIsUploading(false);
+                router.push('/profile');
+            }).catch((error) => {
+                 console.error("Error getting download URL:", error);
+                 toast({
+                    variant: "destructive",
+                    title: "Ошибка",
+                    description: `Не удалось получить URL видео: ${error.message}`,
+                 });
+                 setIsUploading(false);
+            });
+        }
+    );
   }
 
   if (userLoading || !user) {
@@ -217,7 +227,7 @@ export default function UploadPage() {
                   <div className="space-y-2">
                     <Label>Прогресс загрузки</Label>
                     <Progress value={uploadProgress} className="w-full" />
-                    <p className="text-sm text-center text-muted-foreground">{uploadProgress}%</p>
+                    <p className="text-sm text-center text-muted-foreground">{Math.round(uploadProgress)}%</p>
                   </div>
               )}
 
