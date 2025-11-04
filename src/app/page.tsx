@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, Firestore } from 'firebase/firestore';
+import { useFirestore, useCollection } from '@/firebase';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -20,26 +20,36 @@ interface VideoFragment {
   status: string;
 }
 
-/**
- * Компонент для отображения одобренных видео из коллекции 'publicVideoFragments'.
- */
 function ApprovedVideos() {
   const firestore = useFirestore() as Firestore;
 
-  // Создаем memoized-запрос к публичной коллекции.
-  const approvedVideosQuery = useMemo(() => {
+  const videosQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, "publicVideoFragments"), orderBy("uploadDate", "desc"));
   }, [firestore]);
 
-  const { data: videos, isLoading, error } = useCollection<VideoFragment>(approvedVideosQuery);
+  const { data: videos, isLoading, error } = useCollection<VideoFragment>(videosQuery);
 
   if (isLoading) {
-    return <div className="text-center py-16"><p className="text-muted-foreground">Загрузка клипов...</p></div>;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+           <Card key={i}>
+             <CardContent className="p-0">
+                <div className="w-full bg-muted aspect-video rounded-t-lg animate-pulse" />
+                <div className="p-4 space-y-2">
+                  <div className="w-3/4 h-6 bg-muted rounded animate-pulse" />
+                  <div className="w-full h-4 bg-muted rounded animate-pulse" />
+                </div>
+             </CardContent>
+           </Card>
+        ))}
+      </div>
+    );
   }
-
+  
   if (error) {
-    return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки видео. Проверьте правила безопасности Firestore.</p></div>;
+     return <p className="text-destructive">Ошибка загрузки видео: {error.message}</p>;
   }
 
   if (!videos || videos.length === 0) {
