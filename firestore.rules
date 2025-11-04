@@ -13,8 +13,7 @@ service cloud.firestore {
     }
 
     match /publicVideoFragments/{videoId} {
-      allow get: if true;
-      allow list: if true;
+      allow read: if true;
       allow write: if isAdmin();
     }
 

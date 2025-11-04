@@ -1,21 +1,12 @@
-// This is now a Server Component
-import { initializeServerApp } from '@/firebase/server';
+'use client';
+
+import { useMemo } from 'react';
+import { collection, query, orderBy, Firestore } from 'firebase/firestore';
+import { useFirestore, useCollection } from '@/firebase';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import type { Timestamp } from 'firebase-admin/firestore';
-
-// Define the type for our video data on the server
-interface VideoFragmentServer {
-  id: string;
-  title: string;
-  description: string;
-  filePath: string;
-  uploaderId: string;
-  uploadDate: Timestamp; // Firestore Admin SDK uses its own Timestamp
-  status: string;
-}
 
 // Define the type for the props passed to the client component (serializable)
 interface VideoFragmentClient {
@@ -25,44 +16,24 @@ interface VideoFragmentClient {
     filePath: string;
 }
 
-
-// Server-side function to fetch videos.
-async function getPublicVideos(): Promise<VideoFragmentClient[]> {
-  try {
-    const { firestore } = initializeServerApp();
-    // Correct way to get a collection reference with the Admin SDK
-    const videosRef = firestore.collection("publicVideoFragments");
-    const videosQuery = videosRef.orderBy("uploadDate", "desc");
-    const querySnapshot = await videosQuery.get();
-
-    // This is the correct way to handle an empty collection. It's not an error.
-    if (querySnapshot.empty) {
-      console.log("No public videos found. Returning empty array.");
-      return [];
-    }
-
-    // Map server data to a serializable format for the client
-    const videos = querySnapshot.docs.map(doc => {
-        const data = doc.data() as VideoFragmentServer;
-        return {
-          id: doc.id,
-          title: data.title,
-          description: data.description,
-          filePath: data.filePath,
-        };
-    });
-    return videos;
-  } catch (error) {
-    console.error("Error fetching public videos:", error);
-    // In case of a real error on the server, we return an empty array
-    // to prevent the page from crashing.
-    return [];
-  }
-}
-
 // A simple Client Component to display the videos
-function ApprovedVideos({ videos }: { videos: VideoFragmentClient[] }) {
-  'use client';
+function ApprovedVideos() {
+  const firestore = useFirestore() as Firestore;
+
+  const publicVideosQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'publicVideoFragments'), orderBy('uploadDate', 'desc'));
+  }, [firestore]);
+
+  const { data: videos, isLoading, error } = useCollection<VideoFragmentClient>(publicVideosQuery);
+
+  if (isLoading) {
+    return <p>Загрузка видео...</p>;
+  }
+
+  if (error) {
+    return <p className="text-destructive">Ошибка загрузки видео: {error.message}</p>;
+  }
 
   if (!videos || videos.length === 0) {
     return (
@@ -93,9 +64,7 @@ function ApprovedVideos({ videos }: { videos: VideoFragmentClient[] }) {
 }
 
 // The main page component is now an async Server Component
-export default async function Home() {
-  const videos = await getPublicVideos();
-
+export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       <section className="text-center py-16">
@@ -119,7 +88,7 @@ export default async function Home() {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
-        <ApprovedVideos videos={videos} />
+        <ApprovedVideos />
       </section>
     </div>
   );
