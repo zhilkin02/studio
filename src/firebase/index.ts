@@ -18,9 +18,6 @@ function getSdks(firebaseApp: FirebaseApp) {
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
   
-  // Эмуляторы не используются в этой среде
-  // Подключение происходит напрямую к продакшн-сервисам Firebase
-
   return {
     firebaseApp,
     auth,
