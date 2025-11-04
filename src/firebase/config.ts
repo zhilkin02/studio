@@ -3,10 +3,10 @@
 import { FirebaseOptions } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: "API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID",
+  apiKey: 'API_KEY',
+  authDomain: 'konk-media-archive.firebaseapp.com',
+  projectId: 'konk-media-archive',
+  storageBucket: 'konk-media-archive.appspot.com',
+  messagingSenderId: '351475726916',
+  appId: '1:351475726916:web:c85117462057988391336d',
 };
