@@ -1,10 +1,10 @@
 // This is now a Server Component
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { initializeServerApp } from '@/firebase/server';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { getFirestore, collection, query, orderBy, getDocs, Timestamp } from 'firebase-admin/firestore';
 
 // Define the type for our video data
 interface VideoFragment {
@@ -13,15 +13,11 @@ interface VideoFragment {
   description: string;
   filePath: string;
   uploaderId: string;
-  uploadDate: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  uploadDate: Timestamp; // Firestore Admin SDK uses its own Timestamp
   status: string;
 }
 
 // Server-side function to fetch videos.
-// This runs on the server, so it has different permissions.
 async function getPublicVideos(): Promise<VideoFragment[]> {
   try {
     const { firestore } = initializeServerApp();
@@ -37,14 +33,11 @@ async function getPublicVideos(): Promise<VideoFragment[]> {
     return videos;
   } catch (error) {
     console.error("Error fetching public videos:", error);
-    // In case of an error on the server, we return an empty array
-    // to prevent the page from crashing.
     return [];
   }
 }
 
 // A simple Client Component to display the videos
-// It receives data via props and does not fetch data itself.
 function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
   'use client';
 
@@ -76,8 +69,31 @@ function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
 
 // The main page component is now an async Server Component
 export default async function Home() {
-  // Fetch data on the server before rendering
   const videos = await getPublicVideos();
+
+  // The videos data is fetched on the server and passed to the client component as a prop.
+  // To ensure the Timestamp object from the server is usable on the client, we serialize it.
+  const serializableVideos = videos.map(video => ({
+    ...video,
+    // Convert Firestore Timestamp to a serializable format (e.g., ISO string)
+    uploadDate: video.uploadDate.toDate().toISOString(),
+  }));
+
+  // The client component will receive this as a plain JS object, not a class instance.
+  // So we adjust the type on the client side if needed, or just use the string.
+  // For simplicity, we'll let the client component handle the string.
+  // Let's adjust the ApprovedVideos prop type to expect a string for the date.
+  // Oh wait, the `ApprovedVideos` component doesn't even use the date. No change needed there.
+  // The VideoFragment interface here describes server data. The client component prop can be simpler.
+
+  const clientVideos = videos.map(video => ({
+    ...video,
+    uploadDate: { // Re-shape for client component if it were to use it.
+      seconds: video.uploadDate.seconds,
+      nanoseconds: video.uploadDate.nanoseconds
+    }
+  }));
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -102,8 +118,7 @@ export default async function Home() {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
-        {/* Pass the server-fetched data to the client component */}
-        <ApprovedVideos videos={videos} />
+        <ApprovedVideos videos={videos as any} />
       </section>
     </div>
   );
