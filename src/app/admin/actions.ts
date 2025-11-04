@@ -6,29 +6,18 @@ import {
   deleteDoc,
   Firestore,
   DocumentData,
-  getDoc
 } from 'firebase/firestore';
-
-// Определяем тип данных для фрагмента видео
-interface VideoFragment {
-  id: string;
-  title: string;
-  description: string;
-  filePath: string;
-  uploaderId: string;
-  uploadDate: any;
-  status: string;
-}
 
 /**
  * Одобряет видеофрагмент.
- * Перемещает документ из 'pendingVideoFragments' в 'videoFragments'.
+ * Копирует документ из 'pendingVideoFragments' в 'publicVideoFragments' и удаляет исходный.
  * @param firestore - Экземпляр Firestore.
  * @param videoId - ID видео для одобрения.
  */
 export async function approveVideo(firestore: Firestore, videoId: string) {
   const pendingDocRef = doc(firestore, 'pendingVideoFragments', videoId);
-  const approvedDocRef = doc(firestore, 'videoFragments', videoId);
+  const approvedDocRef = doc(firestore, 'publicVideoFragments', videoId);
+  const masterDocRef = doc(firestore, 'videoFragments', videoId);
 
   await runTransaction(firestore, async (transaction) => {
     const pendingDoc = await transaction.get(pendingDocRef);
@@ -37,7 +26,12 @@ export async function approveVideo(firestore: Firestore, videoId: string) {
     }
 
     const newData = { ...pendingDoc.data(), status: 'approved' } as DocumentData;
+    
+    // Create a copy in the public collection and the master collection
     transaction.set(approvedDocRef, newData);
+    transaction.set(masterDocRef, newData);
+
+    // Delete the original from pending
     transaction.delete(pendingDocRef);
   });
 }

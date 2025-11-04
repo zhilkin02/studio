@@ -8,8 +8,13 @@ service cloud.firestore {
 
     match /videoFragments/{videoId} {
       allow get: if true;
-      allow list: if true;
+      allow list: if false; // Explicitly disallow listing from the main collection
       allow write: if isAdmin();
+    }
+
+    match /publicVideoFragments/{videoId} {
+      allow get, list: if true; // Allow public read access
+      allow write: if isAdmin(); // Only admins can write to it
     }
 
     match /pendingVideoFragments/{videoId} {

@@ -25,7 +25,8 @@ function ApprovedVideos() {
 
   const approvedVideosQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "videoFragments"), orderBy("uploadDate", "desc"));
+    // Query the new public collection
+    return query(collection(firestore, "publicVideoFragments"), orderBy("uploadDate", "desc"));
   }, [firestore]);
 
   const { data: videos, isLoading, error } = useCollection<VideoFragment>(approvedVideosQuery);
