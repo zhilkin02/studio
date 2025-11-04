@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ interface VideoFragment {
 
 function ApprovedVideos() {
   const firestore = useFirestore();
-  const approvedVideosQuery = useMemo(() => {
+  const approvedVideosQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, "videoFragments"), orderBy("uploadDate", "desc"));
   }, [firestore]);
@@ -41,6 +41,7 @@ function ApprovedVideos() {
     return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg">
         <p className="text-muted-foreground">Одобренных видеоклипов пока нет.</p>
+        <p className="text-sm text-muted-foreground">Загрузите видео и одобрите его в админ-панели.</p>
       </div>
     );
   }
@@ -49,8 +50,8 @@ function ApprovedVideos() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {videos.map((video) => (
         <Card key={video.id}>
-          <CardHeader>
-            <video controls src={video.filePath} className="w-full rounded-t-lg" preload="metadata" />
+          <CardHeader className="p-0">
+            <video controls src={video.filePath} className="w-full rounded-t-lg aspect-video" preload="metadata" />
           </CardHeader>
           <CardContent className="pt-4">
             <h3 className="font-semibold text-lg truncate">{video.title}</h3>
@@ -86,7 +87,7 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-6">Популярные клипы</h2>
+        <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
         <ApprovedVideos />
       </section>
     </div>
