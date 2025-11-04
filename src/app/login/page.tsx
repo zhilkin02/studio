@@ -1,16 +1,15 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState, useEffect } from "react";
 import { login } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const [state, formAction] = useFormState(login, null);
+  const [state, formAction] = useActionState(login, null);
 
   useEffect(() => {
     if (state?.error) {
