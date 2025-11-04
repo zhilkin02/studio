@@ -11,7 +11,6 @@ import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
 
 
 interface PendingVideo {
@@ -57,7 +56,9 @@ function PendingVideosList() {
                 title: "Видео одобрено!",
                 description: `"${video.title}" теперь доступно для всех.`,
             });
-            setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
+            if (setData) {
+              setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
+            }
 
         } catch (e: any) {
             console.error("Error approving video:", e);
@@ -76,12 +77,7 @@ function PendingVideosList() {
         setMutatingId(video.id);
 
         try {
-            // Delete file from Storage first
-            const storage = getStorage();
-            const fileRef = ref(storage, video.filePath); // filePath is the full URL
-            await deleteObject(fileRef);
-            
-            // Then delete the document from Firestore
+            // Просто удаляем документ из Firestore, так как файл находится по внешней ссылке
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(pendingDocRef);
 
@@ -89,15 +85,17 @@ function PendingVideosList() {
                 title: "Видео отклонено",
                 description: `"${video.title}" было удалено.`,
             });
-             // Optimistically update the UI
-            setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
+             // Оптимистическое обновление UI
+             if (setData) {
+              setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
+            }
 
         } catch (e: any) {
             console.error("Error rejecting video:", e);
              toast({
                 variant: "destructive",
                 title: "Ошибка отклонения",
-                description: "Не удалось удалить файл. Возможно, он уже был удален или у вас нет прав."
+                description: "Не удалось удалить запись из базы данных."
             });
         } finally {
             setMutatingId(null);
