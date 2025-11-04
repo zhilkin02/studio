@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { getFirestore, collection, query, orderBy, getDocs, Timestamp } from 'firebase-admin/firestore';
+import type { Timestamp } from 'firebase-admin/firestore';
 
 // Define the type for our video data on the server
 interface VideoFragmentServer {
@@ -30,14 +30,14 @@ interface VideoFragmentClient {
 async function getPublicVideos(): Promise<VideoFragmentClient[]> {
   try {
     const { firestore } = initializeServerApp();
-    const videosQuery = query(
-      collection(firestore, "publicVideoFragments"), 
-      orderBy("uploadDate", "desc")
-    );
-    const querySnapshot = await getDocs(videosQuery);
+    // Correct way to get a collection reference with the Admin SDK
+    const videosRef = firestore.collection("publicVideoFragments");
+    const videosQuery = videosRef.orderBy("uploadDate", "desc");
+    const querySnapshot = await videosQuery.get();
 
     // This is the correct way to handle an empty collection. It's not an error.
     if (querySnapshot.empty) {
+      console.log("No public videos found. Returning empty array.");
       return [];
     }
 
