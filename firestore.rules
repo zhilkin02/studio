@@ -58,7 +58,7 @@ service cloud.firestore {
       * @description Grants admin privileges to users with a document in this collection.
       */
     match /roles_admin/{userId} {
-        allow get: if true; // Allows clients to check their own admin status
+        allow get: if isOwner(userId);
         allow list: if false; // Disallow listing all admins
         allow create, delete: if isAdmin(); // Only admins can change other admins
         allow update: if false;
