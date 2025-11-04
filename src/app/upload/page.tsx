@@ -16,19 +16,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, AlertCircle, UploadCloud } from 'lucide-react';
+import { CheckCircle, AlertCircle, UploadCloud, FileVideo, X } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Label } from '@/components/ui/label';
 
-
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
   description: z.string().min(10, 'Описание должно быть не менее 10 символов.').max(500, 'Описание должно быть не более 500 символов.'),
-  video: z.instanceof(FileList).refine(files => files?.length === 1, 'Необходимо загрузить один видеофайл.')
-    .refine(files => files?.[0]?.type.startsWith('video/'), 'Файл должен быть видео.')
-    .refine(files => files?.[0]?.size <= 100 * 1024 * 1024, 'Максимальный размер видео - 100 МБ.'),
 });
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
 export default function UploadPage() {
   const { user, loading: userLoading } = useUser();
@@ -36,6 +34,8 @@ export default function UploadPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -52,8 +52,35 @@ export default function UploadPage() {
       router.push('/login');
     }
   }, [user, userLoading, router]);
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setFileError(null);
+
+    if (file) {
+      if (!file.type.startsWith('video/')) {
+        setFileError('Файл должен быть видео.');
+        setVideoFile(null);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setFileError(`Максимальный размер видео - ${MAX_FILE_SIZE / 1024 / 1024} МБ.`);
+        setVideoFile(null);
+        return;
+      }
+      setVideoFile(file);
+    } else {
+        setVideoFile(null);
+    }
+  };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setFileError(null);
+    if (!videoFile) {
+        setFileError('Необходимо выбрать видеофайл для загрузки.');
+        return;
+    }
     if (!user || !firestore) {
         toast({
             variant: "destructive",
@@ -66,7 +93,6 @@ export default function UploadPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    const videoFile = values.video[0];
     const storage = getStorage();
     const uniqueFileName = `${user.uid}/${uuidv4()}-${videoFile.name}`;
     const storageRef = ref(storage, `videos/${uniqueFileName}`);
@@ -84,12 +110,6 @@ export default function UploadPage() {
                 variant: "destructive",
                 title: "Ошибка загрузки",
                 description: `Не удалось загрузить видео: ${error.message}`,
-                 action: (
-                 <div className="flex items-center">
-                    <AlertCircle className="text-white mr-2"/>
-                    <span>Попробуйте еще раз</span>
-                </div>
-            )
             });
             setIsUploading(false);
         },
@@ -118,10 +138,8 @@ export default function UploadPage() {
                                 </div>
                             )
                         });
-
                         form.reset();
-                        // Also reset the file input if possible. A bit tricky with react-hook-form.
-                        // A common way is to give the form a key and change it on reset.
+                        setVideoFile(null);
                         setIsUploading(false);
                         router.push('/profile');
                     })
@@ -200,31 +218,40 @@ export default function UploadPage() {
                   </FormItem>
                 )}
               />
-               <FormField
-                control={form.control}
-                name="video"
-                render={({ field: { onChange, value, ...rest } }) => (
-                  <FormItem>
-                    <FormLabel>Видеофайл</FormLabel>
-                    <FormControl>
-                        <div className="relative flex items-center justify-center w-full">
-                            <label htmlFor="video-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Нажмите для загрузки</span> или перетащите файл</p>
-                                    <p className="text-xs text-muted-foreground">MP4, WebM, Ogg (Макс. 100МБ)</p>
-                                </div>
-                                <Input id="video-upload" type="file" className="sr-only" accept="video/*"
-                                  onChange={(e) => onChange(e.target.files)} {...rest}
-                                />
-                            </label>
-                             {value?.[0] && <p className="text-sm text-center text-muted-foreground absolute bottom-4">{value[0].name}</p>}
+              
+              <FormItem>
+                <FormLabel>Видеофайл</FormLabel>
+                <FormControl>
+                  {!videoFile ? (
+                    <div className="relative flex items-center justify-center w-full">
+                      <label htmlFor="video-upload" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/50 hover:bg-muted/75 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Нажмите для загрузки</span> или перетащите файл</p>
+                              <p className="text-xs text-muted-foreground">MP4, WebM, Ogg (Макс. 100МБ)</p>
+                          </div>
+                          <Input id="video-upload" type="file" className="sr-only" accept="video/*"
+                            onChange={handleFileChange}
+                          />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-3">
+                            <FileVideo className="h-6 w-6 text-muted-foreground" />
+                            <div className='text-sm'>
+                                <p className="font-medium truncate max-w-xs">{videoFile.name}</p>
+                                <p className="text-muted-foreground">{(videoFile.size / (1024 * 1024)).toFixed(2)} МБ</p>
+                            </div>
                         </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-                />
+                        <Button variant="ghost" size="icon" onClick={() => setVideoFile(null)} disabled={isUploading}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  )}
+                </FormControl>
+                {fileError && <p className="text-sm font-medium text-destructive">{fileError}</p>}
+              </FormItem>
 
               {isUploading && (
                   <div className="space-y-2">
@@ -234,8 +261,8 @@ export default function UploadPage() {
                   </div>
               )}
 
-              <Button type="submit" disabled={isUploading}>
-                {isUploading ? 'Загрузка...' : 'Отправить на модерацию'}
+              <Button type="submit" disabled={isUploading || !videoFile}>
+                {isUploading ? `Загрузка... ${uploadProgress}%` : 'Отправить на модерацию'}
               </Button>
             </form>
           </Form>
