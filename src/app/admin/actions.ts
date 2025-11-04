@@ -4,9 +4,9 @@ import {
   doc,
   runTransaction,
   deleteDoc,
-  getDoc,
-  DocumentReference,
   Firestore,
+  DocumentData,
+  getDoc
 } from 'firebase/firestore';
 
 // Определяем тип данных для фрагмента видео
@@ -24,11 +24,11 @@ interface VideoFragment {
  * Одобряет видеофрагмент.
  * Перемещает документ из 'pendingVideoFragments' в 'videoFragments'.
  * @param firestore - Экземпляр Firestore.
- * @param video - Объект видео для одобрения.
+ * @param videoId - ID видео для одобрения.
  */
-export async function approveVideo(firestore: Firestore, video: VideoFragment) {
-  const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
-  const approvedDocRef = doc(firestore, 'videoFragments', video.id);
+export async function approveVideo(firestore: Firestore, videoId: string) {
+  const pendingDocRef = doc(firestore, 'pendingVideoFragments', videoId);
+  const approvedDocRef = doc(firestore, 'videoFragments', videoId);
 
   await runTransaction(firestore, async (transaction) => {
     const pendingDoc = await transaction.get(pendingDocRef);
@@ -36,7 +36,7 @@ export async function approveVideo(firestore: Firestore, video: VideoFragment) {
       throw new Error("Документ не найден в ожидающих!");
     }
 
-    const newData = { ...pendingDoc.data(), status: 'approved' };
+    const newData = { ...pendingDoc.data(), status: 'approved' } as DocumentData;
     transaction.set(approvedDocRef, newData);
     transaction.delete(pendingDocRef);
   });
@@ -46,10 +46,10 @@ export async function approveVideo(firestore: Firestore, video: VideoFragment) {
  * Отклоняет видеофрагмент.
  * Удаляет документ из 'pendingVideoFragments'.
  * @param firestore - Экземпляр Firestore.
- * @param video - Объект видео для отклонения.
+ * @param videoId - ID видео для отклонения.
  */
-export async function rejectVideo(firestore: Firestore, video: VideoFragment) {
-  const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
+export async function rejectVideo(firestore: Firestore, videoId: string) {
+  const pendingDocRef = doc(firestore, 'pendingVideoFragments', videoId);
   await deleteDoc(pendingDocRef);
   // TODO: Удалить файл из Firebase Storage
 }

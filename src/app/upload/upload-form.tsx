@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 export function UploadForm() {
@@ -27,6 +27,15 @@ export function UploadForm() {
         variant: 'destructive',
         title: 'Ошибка',
         description: 'Вы должны войти в систему, чтобы загружать видео.',
+      });
+      return;
+    }
+    
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'База данных не инициализирована.',
       });
       return;
     }
@@ -59,7 +68,9 @@ export function UploadForm() {
       const downloadURL = await getDownloadURL(uploadTask.ref);
 
       // 2. Create document in Firestore
-      await addDoc(collection(firestore, 'pendingVideoFragments'), {
+      const docRef = doc(firestore, 'pendingVideoFragments', videoId);
+      await setDoc(docRef, {
+        id: videoId,
         title,
         description,
         filePath: downloadURL,

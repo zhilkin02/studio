@@ -34,7 +34,7 @@ export function PendingVideos() {
 
   const handleApprove = async (video: VideoFragment) => {
     try {
-      await approveVideo(firestore, video);
+      await approveVideo(firestore, video.id);
       toast({
         title: 'Успех',
         description: `Видео "${video.title}" одобрено.`,
@@ -50,7 +50,7 @@ export function PendingVideos() {
 
   const handleReject = async (video: VideoFragment) => {
     try {
-      await rejectVideo(firestore, video);
+      await rejectVideo(firestore, video.id);
       toast({
         title: 'Успех',
         description: `Видео "${video.title}" отклонено.`,
