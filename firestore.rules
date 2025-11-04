@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // --- Public Content ---
+    // Anyone can read (get, list) public video fragments.
+    // Only admins can create, update, or delete them.
+    match /publicVideoFragments/{videoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- User-Specific Content ---
+    // A user can read and write to their own user profile. No one else can.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // --- Pending Content for Admin Review ---
+    // Any signed-in user can create a pending video.
+    // Only admins can see the full list, or approve/reject (update/delete).
+    match /pendingVideoFragments/{videoId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // --- Admin Roles ---
+    // Only other admins can view or change admin roles.
+    match /roles_admin/{userId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // --- Original Video Fragments (Internal) ---
+    // This collection is not intended for public listing.
+    // An owner can read their own uploaded video fragment.
+    // Admins can read any fragment.
+    match /videoFragments/{videoId} {
+       allow read: if isAdmin() || (resource.data.uploaderId == request.auth.uid);
+       // Write rules for this collection can be added later if needed.
+       allow write: if false; 
+    }
+  }
+}

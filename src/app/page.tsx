@@ -4,7 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { publicVideos } from '@/lib/static-data';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from '@/firebase';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import React from "react";
 
 interface VideoFragment {
     id: string;
@@ -13,13 +19,52 @@ interface VideoFragment {
     filePath: string;
 }
 
-function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
+function ApprovedVideos() {
+  const firestore = useFirestore();
+  const videosQuery = React.useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'publicVideoFragments'), orderBy('uploadDate', 'desc'));
+  }, [firestore]);
+
+  const { data: videos, loading, error } = useCollection(videosQuery);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="p-0">
+               <Skeleton className="w-full h-auto aspect-video rounded-t-lg" />
+            </CardHeader>
+            <CardContent className="pt-4">
+               <Skeleton className="h-6 w-3/4 mb-2" />
+               <Skeleton className="h-4 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Ошибка загрузки видео</AlertTitle>
+            <AlertDescription>
+                Не удалось получить данные из базы. Пожалуйста, проверьте правила безопасности Firestore.
+                <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
+            </AlertDescription>
+        </Alert>
+    )
+  }
+
   if (!videos || videos.length === 0) {
     return (
       <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
         <h3 className="text-xl font-semibold text-foreground">Видео пока нет</h3>
         <p className="text-muted-foreground mt-2">
-          В данный момент нет доступных видео.
+          В данный момент нет одобренных видео. Первый ролик скоро появится!
         </p>
       </div>
     );
@@ -27,7 +72,7 @@ function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {videos.map((video) => (
+      {(videos as VideoFragment[]).map((video) => (
         <Card key={video.id}>
           <CardHeader className="p-0">
             <video controls src={video.filePath} className="w-full rounded-t-lg aspect-video" preload="metadata" />
@@ -41,6 +86,7 @@ function ApprovedVideos({ videos }: { videos: VideoFragment[] }) {
     </div>
   );
 }
+
 
 export default function Home() {
   return (
@@ -66,7 +112,7 @@ export default function Home() {
 
       <section>
         <h2 className="text-2xl font-semibold mb-6">Недавно добавленные</h2>
-        <ApprovedVideos videos={publicVideos} />
+        <ApprovedVideos />
       </section>
     </div>
   );
