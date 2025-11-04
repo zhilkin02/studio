@@ -1,0 +1,128 @@
+/**
+ * @fileOverview Firestore Security Rules for Konk Media Archive.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes a secure, scalable, and maintainable backend by enforcing strict ownership and role-based access control.  It avoids complex data validation in favor of rapid prototyping but focuses intensely on authorization.  The rules are designed to be independent and avoid chained lookups.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles, accessible only to the user themselves.
+ * - /videoFragments/{videoId}: Stores publicly accessible video fragments.  Write access is restricted to the uploader.
+ * - /pendingVideoFragments/{videoId}: Stores video fragments awaiting admin approval. Only admins can manage these.
+ * - /roles_admin/{userId}: Presence of a document grants admin privileges to the corresponding user. The document content is irrelevant.
+ *
+ * Key Security Decisions:
+ * - User data is private and only accessible by the user.
+ * - Public videos are readable by anyone, but only the uploader can modify them.
+ * - Pending videos are only manageable by admins.
+ * - Admin status is determined by the existence of a document in `/roles_admin/{userId}`, not a field in the user document.
+ * - Listing of user documents is forbidden.
+ *
+ * Denormalization for Authorization:
+ * - Video fragments include an `uploaderId` field to enable simple ownership checks without additional reads.
+ *
+ * Structural Segregation:
+ * - Approved and pending videos are stored in separate collections to avoid filtering and simplify access control.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Grants access to user profile based on ownership.
+     * @path /users/{userId}
+     * @allow (create) User with ID 'user123' can create their profile: request.auth.uid == 'user123'
+     * @allow (get, update, delete) User with ID 'user123' can read, update, and delete their profile: request.auth.uid == 'user123'
+     * @deny (create) User with ID 'user456' cannot create a profile with ID 'user123': request.auth.uid != 'user123'
+     * @deny (get, update, delete) User with ID 'user456' cannot read, update or delete the profile of 'user123': request.auth.uid != 'user123'
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Grants public read access to approved video fragments and restricts write access to the uploader.
+     * @path /videoFragments/{videoId}
+     * @allow (get, list) Any user can read or list approved video fragments.
+     * @allow (create) User with ID 'user123' can create a video fragment where request.resource.data.uploaderId == 'user123'
+     * @allow (update, delete) User with ID 'user123' can update/delete a video fragment where resource.data.uploaderId == 'user123'
+     * @deny (create) User with ID 'user456' cannot create a video fragment with uploaderId 'user123': request.resource.data.uploaderId != request.auth.uid
+     * @deny (update, delete) User with ID 'user456' cannot update/delete a video fragment uploaded by 'user123': resource.data.uploaderId != request.auth.uid
+     * @principle Allows public reads with owner-only writes, enforcing ownership through the 'uploaderId' field.
+     */
+    match /videoFragments/{videoId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.uploaderId);
+      allow delete: if isExistingOwner(resource.data.uploaderId);
+    }
+
+    /**
+     * @description Grants admin access to pending video fragments.
+     * @path /pendingVideoFragments/{videoId}
+     * @allow (get, list, create, update, delete) Only admins can manage pending video fragments.
+     * @deny (get, list, create, update, delete) Non-admins cannot access pending video fragments.
+     * @principle Restricts access to pending content to users with admin privileges.
+     */
+    match /pendingVideoFragments/{videoId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+
+     /**
+      * @description Grants admin privileges to users with a document in this collection.
+      * @path /roles_admin/{userId}
+      * @allow (create) An admin (determined by the 'isAdmin' helper function) can create a role assignment document.
+      * @allow (get) Any user (including unauthenticated) can check for existence of an admin role
+      * @allow (delete) Only an admin user can remove an admin role.
+      * @deny (create, delete) Non-admins cannot manage admin roles.
+      * @principle Uses document existence to grant admin privileges, enabling atomic role assignment.
+      */
+    match /roles_admin/{userId} {
+        allow get: if true;
+        allow list: if false;
+        allow create: if isAdmin();
+        allow update: if false;
+        allow delete: if isAdmin();
+    }
+
+    // --- Helper Functions ---
+
+    /**
+     * @description Checks if the request is authenticated.
+     * @returns {boolean} True if the request is authenticated; false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the resource.
+     * @param {string} userId - The user ID to compare against the authenticated user's ID.
+     * @returns {boolean} True if the user is the owner; false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+     /**
+      * @description Checks if the authenticated user is the owner of the resource and the resource exists.
+      * @param {string} userId - The user ID to compare against the authenticated user's ID.
+      * @returns {boolean} True if the user is the owner and the resource exists; false otherwise.
+      */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user is an administrator.
+     * @returns {boolean} True if the user is an administrator; false otherwise.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+  }
+}

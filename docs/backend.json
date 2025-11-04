@@ -1,0 +1,162 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Konk Media Archive platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's username."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date and time the user registered.",
+          "format": "date-time"
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates whether the user has administrator privileges."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate",
+        "isAdmin"
+      ]
+    },
+    "VideoFragment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "VideoFragment",
+      "type": "object",
+      "description": "Represents a video fragment uploaded to the Konk Media Archive.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the VideoFragment entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the video fragment."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the video fragment."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date and time the video fragment was uploaded.",
+          "format": "date-time"
+        },
+        "uploaderId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N VideoFragment).  The ID of the user who uploaded the video fragment."
+        },
+        "filePath": {
+          "type": "string",
+          "description": "The file path or URL where the video fragment is stored."
+        },
+        "status": {
+          "type": "string",
+          "description": "The video fragment's status: pending, approved, or rejected. Example: pending"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "uploadDate",
+        "uploaderId",
+        "filePath",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Accessible only to the user themselves. Includes standard user profile information.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/videoFragments/{videoId}",
+        "definition": {
+          "entityName": "VideoFragment",
+          "schema": {
+            "$ref": "#/backend/entities/VideoFragment"
+          },
+          "description": "Stores approved video fragments that are available for all users to view and download. Includes the `uploaderId` field for ownership checks.",
+          "params": [
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video fragment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/pendingVideoFragments/{videoId}",
+        "definition": {
+          "entityName": "VideoFragment",
+          "schema": {
+            "$ref": "#/backend/entities/VideoFragment"
+          },
+          "description": "Stores video fragments awaiting admin approval.  Admins can access and modify documents in this collection.",
+          "params": [
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the pending video fragment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "adminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "A document's existence in this collection grants admin privileges to the corresponding user. Existence over Content. The document content is not relevant.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who is an admin."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Konk Media Archive application, focusing on authorization independence and clear access control. Key considerations are admin role management and video fragment approval workflows.\n\n**Authorization Independence:**\n\n*   Admin role: The presence of a document in the `/roles_admin/{uid}` collection grants admin privileges. This eliminates the need to read user documents to determine admin status. This also enables atomic admin role assignment.\n*   Video fragment ownership: The `uploaderId` field within the `/videoFragments/{videoId}` documents denormalizes the user ID. Security rules can then use `request.auth.uid` and `resource.data.uploaderId` to enforce ownership without additional `get()` calls.\n\n**QAPs (Rules Are Not Filters):**\n\n*   Segregation for video fragment status: Approved videos are stored in `/videoFragments`, while pending videos are stored in `/pendingVideoFragments`. This segregation allows listing approved videos without filtering for status. Admins can manage pending videos in `/pendingVideoFragments`.\n\n*   Admin Role Management: Authorization for admin actions (like approving videos) relies on the existence of a document in `/roles_admin/{uid}`. This makes admin authorization explicit and efficient.\n\nThis structure avoids hierarchical dependencies, enables atomic operations, and clarifies authorization intent for improved security and debuggability."
+  }
+}
