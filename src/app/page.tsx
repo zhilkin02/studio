@@ -1,6 +1,67 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface VideoFragment {
+  id: string;
+  title: string;
+  description: string;
+  filePath: string;
+  uploaderId: string;
+  uploadDate: {
+    seconds: number;
+  };
+  status: string;
+}
+
+function ApprovedVideos() {
+  const firestore = useFirestore();
+  const approvedVideosQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "videoFragments"), orderBy("uploadDate", "desc"));
+  }, [firestore]);
+
+  const { data: videos, isLoading, error } = useCollection<VideoFragment>(approvedVideosQuery);
+
+  if (isLoading) {
+    return <div className="text-center py-16"><p className="text-muted-foreground">Загрузка клипов...</p></div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-16"><p className="text-destructive">Ошибка загрузки: {error.message}</p></div>;
+  }
+
+  if (!videos || videos.length === 0) {
+    return (
+      <div className="text-center py-16 border-2 border-dashed rounded-lg">
+        <p className="text-muted-foreground">Одобренных видеоклипов пока нет.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {videos.map((video) => (
+        <Card key={video.id}>
+          <CardHeader>
+            <video controls src={video.filePath} className="w-full rounded-t-lg" preload="metadata" />
+          </CardHeader>
+          <CardContent className="pt-4">
+            <h3 className="font-semibold text-lg truncate">{video.title}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 
 export default function Home() {
   return (
@@ -25,10 +86,8 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Популярные клипы</h2>
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <p className="text-muted-foreground">Видеоклипы скоро появятся здесь.</p>
-        </div>
+        <h2 className="text-2xl font-semibold mb-6">Популярные клипы</h2>
+        <ApprovedVideos />
       </section>
     </div>
   );

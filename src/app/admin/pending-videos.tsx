@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { approveVideo, rejectVideo } from './actions';
+import { useToast } from '@/hooks/use-toast';
 
 interface VideoFragment {
   id: string;
@@ -22,21 +23,45 @@ interface VideoFragment {
 
 export function PendingVideos() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const pendingVideosQuery = useMemo(() => {
+    if (!firestore) return null;
     return query(collection(firestore, 'pendingVideoFragments'), orderBy('uploadDate', 'desc'));
   }, [firestore]);
 
   const { data: videos, isLoading, error } = useCollection<VideoFragment>(pendingVideosQuery);
 
-  const handleApprove = (video: VideoFragment) => {
-    // approveVideo(video);
-    alert(`Одобрение для: ${video.title} (в разработке)`);
+  const handleApprove = async (video: VideoFragment) => {
+    try {
+      await approveVideo(firestore, video);
+      toast({
+        title: 'Успех',
+        description: `Видео "${video.title}" одобрено.`,
+      });
+    } catch (e) {
+        toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось одобрить видео.',
+      });
+    }
   };
 
-  const handleReject = (video: VideoFragment) => {
-    // rejectVideo(video);
-    alert(`Отклонение для: ${video.title} (в разработке)`);
+  const handleReject = async (video: VideoFragment) => {
+    try {
+      await rejectVideo(firestore, video);
+      toast({
+        title: 'Успех',
+        description: `Видео "${video.title}" отклонено.`,
+      });
+    } catch(e) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: 'Не удалось отклонить видео.',
+      });
+    }
   };
 
 
