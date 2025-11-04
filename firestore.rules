@@ -1,34 +1,9 @@
+rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-
-    match /videoFragments/{videoId} {
-      allow get: if true;
-      allow list: if false; 
-      allow write: if isAdmin();
-    }
-
-    match /publicVideoFragments/{videoId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /pendingVideoFragments/{videoId} {
-      allow read, update, delete: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
-      allow list: if isAdmin();
-    }
-
-    match /roles_admin/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; 
-      allow create, delete: if isAdmin();
-      allow update: if false;
-    }
-
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -36,9 +11,46 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // Collection rules
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /videoFragments/{videoId} {
+      // Only admins can write, but anyone can read a specific document if they have the ID.
+      // List operation is disabled to prevent browsing the entire master collection.
+      allow get: if true;
+      allow list: if false; 
+      allow write: if isAdmin();
+    }
+
+    match /publicVideoFragments/{videoId} {
+      // This collection is open for public reading (get and list).
+      // Only admins can write to it.
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pendingVideoFragments/{videoId} {
+      // Admins can manage pending videos.
+      allow read, update, delete, list: if isAdmin();
+      // Any signed-in user can create a new pending video, ensuring they are the uploader.
+      allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
+    }
+
+    match /roles_admin/{userId} {
+      // A user can check their own admin status.
+      allow get: if isOwner(userId);
+      // Listing all admins is disabled.
+      allow list: if false; 
+      // Only existing admins can add or remove other admins.
+      allow create, delete: if isAdmin();
+      allow update: if false;
     }
   }
 }
