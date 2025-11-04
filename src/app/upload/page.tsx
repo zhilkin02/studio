@@ -76,7 +76,7 @@ export default function UploadPage() {
     uploadTask.on('state_changed',
         (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
+            setUploadProgress(Math.round(progress));
         },
         (error) => {
             console.error("Error uploading video:", error);
@@ -92,7 +92,6 @@ export default function UploadPage() {
             )
             });
             setIsUploading(false);
-            setUploadProgress(0);
         },
         () => {
             getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
@@ -227,7 +226,7 @@ export default function UploadPage() {
                   <div className="space-y-2">
                     <Label>Прогресс загрузки</Label>
                     <Progress value={uploadProgress} className="w-full" />
-                    <p className="text-sm text-center text-muted-foreground">{Math.round(uploadProgress)}%</p>
+                    <p className="text-sm text-center text-muted-foreground">{uploadProgress}%</p>
                   </div>
               )}
 
