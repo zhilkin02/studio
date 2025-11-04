@@ -19,7 +19,9 @@ export function Header() {
         <div className="flex items-center gap-4">
           {isAdmin ? (
             <>
-              <Button variant="outline">Загрузить видео</Button>
+              <Link href="/upload">
+                <Button variant="outline">Загрузить видео</Button>
+              </Link>
               <form action={logout}>
                 <Button variant="ghost" type="submit">Выйти</Button>
               </form>
@@ -29,7 +31,7 @@ export function Header() {
                 <Link href="/login">
                     <Button variant="ghost">Войти</Button>
                 </Link>
-                <Button variant="outline">Загрузить видео</Button>
+                <Button variant="outline" disabled>Загрузить видео</Button>
             </>
           )}
         </div>

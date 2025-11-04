@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   
-  // Здесь в будущем можно будет добавить пути, требующие аутентификации
   const protectedRoutes = ['/upload']; 
 
   const isProtectedRoute = protectedRoutes.some(path => request.nextUrl.pathname.startsWith(path));

@@ -29,3 +29,29 @@ export async function logout() {
     revalidatePath('/')
     redirect('/')
 }
+
+export async function uploadVideo(prevState: { error?: string; success?: boolean } | null, formData: FormData) {
+    const cookieStore = cookies()
+    const session = cookieStore.get('session')?.value
+    if (session !== 'admin') {
+        return { error: 'У вас нет прав для выполнения этого действия.' }
+    }
+
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const video = formData.get('video') as File;
+
+    if (!title || !description || !video || video.size === 0) {
+        return { error: 'Все поля обязательны для заполнения.' }
+    }
+
+    // TODO: Implement actual file storage and database record creation
+    console.log('Получено видео на модерацию:');
+    console.log('Название:', title);
+    console.log('Описание:', description);
+    console.log('Файл:', video.name, `${(video.size / 1024 / 1024).toFixed(2)} MB`);
+
+    // Simulate a successful upload
+    revalidatePath('/upload');
+    return { success: true };
+}
