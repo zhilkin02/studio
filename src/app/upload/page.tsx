@@ -94,7 +94,7 @@ export default function UploadPage() {
             setIsUploading(false);
         },
         () => {
-            getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                 const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
                 
                 const docData = {
@@ -106,31 +106,33 @@ export default function UploadPage() {
                     uploadDate: serverTimestamp(),
                 };
 
-                try {
-                   await addDoc(pendingCollectionRef, docData)
-                } catch(serverError) {
-                    const permissionError = new FirestorePermissionError({
-                      path: pendingCollectionRef.path,
-                      operation: 'create',
-                      requestResourceData: docData,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                }
+                addDoc(pendingCollectionRef, docData)
+                    .then(() => {
+                        toast({
+                            title: "Успешно загружено!",
+                            description: "Ваше видео отправлено на модерацию.",
+                            action: (
+                                <div className="flex items-center">
+                                    <CheckCircle className="text-green-500 mr-2"/>
+                                    <span>Отлично</span>
+                                </div>
+                            )
+                        });
 
-                toast({
-                    title: "Успешно загружено!",
-                    description: "Ваше видео отправлено на модерацию.",
-                    action: (
-                        <div className="flex items-center">
-                            <CheckCircle className="text-green-500 mr-2"/>
-                            <span>Отлично</span>
-                        </div>
-                    )
+                        form.reset();
+                        setIsUploading(false);
+                        router.push('/profile');
+                    })
+                    .catch((serverError) => {
+                        const permissionError = new FirestorePermissionError({
+                          path: pendingCollectionRef.path,
+                          operation: 'create',
+                          requestResourceData: docData,
+                        });
+                        errorEmitter.emit('permission-error', permissionError);
+                        setIsUploading(false);
                 });
 
-                form.reset();
-                setIsUploading(false);
-                router.push('/profile');
             }).catch((error) => {
                  console.error("Error getting download URL:", error);
                  toast({
