@@ -22,20 +22,21 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     if (!auth) {
         setError("Сервис аутентификации еще не инициализирован.");
         return;
     };
     setError(null);
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.push('/profile');
-    } catch (error: any) {
-      console.error('Error signing in with Google:', error);
-      setError(`Ошибка входа: ${error.code} - ${error.message}`);
-    }
+    signInWithPopup(auth, provider)
+      .then(() => {
+        router.push('/profile');
+      })
+      .catch((error: any) => {
+        console.error('Error signing in with Google:', error);
+        setError(`Ошибка входа: ${error.code} - ${error.message}`);
+      });
   };
 
   return (
