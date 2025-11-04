@@ -17,18 +17,20 @@ export function initializeFirebase() {
   return getSdks(firebaseApp, isDev);
 }
 
-export function getSdks(firebaseApp: FirebaseApp, isDev: boolean) {
+function getSdks(firebaseApp: FirebaseApp, isDev: boolean) {
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
   
-  if (isDev && typeof window !== 'undefined' && !(auth as any).emulatorConfig) {
+  if (isDev && typeof window !== 'undefined') {
     // В рабочей среде Next.js HMR может вызывать это несколько раз. 
     // Проверяем, был ли эмулятор уже подключен.
-    try {
+    // @ts-ignore
+    if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-      connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
-    } catch (e) {
-      // Игнорируем ошибки, если эмуляторы уже подключены.
+    }
+    // @ts-ignore
+    if (!firestore._settings.host.includes('127.0.0.1')) {
+       connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
     }
   }
 
