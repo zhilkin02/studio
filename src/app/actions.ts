@@ -7,11 +7,11 @@ import { db, storage } from '@/lib/firebase'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
  
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
  
 export async function login(prevState: { error: string | undefined } | null, formData: FormData) {
   const password = formData.get('password');
-  if (password === ADMIN_PASSWORD) {
+  if (password && password === ADMIN_PASSWORD) {
     const cookieStore = cookies()
     cookieStore.set('session', 'admin', {
         httpOnly: true,
