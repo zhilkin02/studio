@@ -1,15 +1,35 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-          Добро пожаловать в ваше приложение
+    <div className="container mx-auto px-4 py-8">
+      <section className="text-center py-16">
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
+          Коротко О Не Коротком
         </h1>
-        <p className="mt-6 text-lg leading-8 text-muted-foreground">
-          Начните с редактирования <code className="font-mono bg-muted p-1 rounded-md">src/app/page.tsx</code>
+        <p className="text-lg md:text-xl text-muted-foreground mb-8">
+          Найдите идеальный фрагмент из фильма или сериала за секунды.
         </p>
-      </div>
-    </main>
+        <div className="max-w-2xl mx-auto flex gap-2">
+          <Input
+            type="search"
+            placeholder="Введите ключевые слова, название фильма или описание..."
+            className="flex-grow"
+          />
+          <Button type="submit">
+            <Search className="mr-2 h-4 w-4" /> Поиск
+          </Button>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Популярные клипы</h2>
+        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+          <p className="text-muted-foreground">Видеоклипы скоро появятся здесь.</p>
+        </div>
+      </section>
+    </div>
   );
 }
