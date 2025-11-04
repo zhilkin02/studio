@@ -6,18 +6,18 @@ import { Film } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const isAdmin = useAdminStatus();
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
   };
-
-  const isAdmin = user && user.email === 'konk-media-archive@gmail.com';
 
   return (
     <header className="bg-background border-b border-border/50 sticky top-0 z-40">

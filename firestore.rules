@@ -69,7 +69,7 @@ service cloud.firestore {
      * @principle Restricts access to pending content to users with admin privileges.
      */
     match /pendingVideoFragments/{videoId} {
-      allow get, list, create, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
      /**
@@ -82,11 +82,10 @@ service cloud.firestore {
       * @principle Uses document existence to grant admin privileges, enabling atomic role assignment.
       */
     match /roles_admin/{userId} {
-        allow get: if true;
-        allow list: if false;
-        allow create: if isAdmin();
+        allow get: if true; // Allows clients to check their own admin status
+        allow list: if false; // Disallow listing all admins
+        allow create, delete: if isAdmin(); // Only admins can change other admins
         allow update: if false;
-        allow delete: if isAdmin();
     }
 
     // --- Helper Functions ---
@@ -122,9 +121,7 @@ service cloud.firestore {
      * @returns {boolean} True if the user is an administrator; false otherwise.
      */
     function isAdmin() {
-      // In this new model, admin is determined by a hardcoded email.
-      // We will create a collection `roles_admin` to manage admins for better security rules.
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
   }
 }

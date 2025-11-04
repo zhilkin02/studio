@@ -82,6 +82,13 @@
         "filePath",
         "status"
       ]
+    },
+    "AdminRole": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin Role",
+      "type": "object",
+      "description": "An empty document whose existence indicates admin privileges.",
+      "properties": {}
     }
   },
   "auth": {
@@ -142,9 +149,9 @@
       {
         "path": "/roles_admin/{userId}",
         "definition": {
-          "entityName": "adminRole",
+          "entityName": "AdminRole",
           "schema": {
-            "$ref": "#/backend/entities/User"
+            "$ref": "#/backend/entities/AdminRole"
           },
           "description": "A document's existence in this collection grants admin privileges to the corresponding user. Existence over Content. The document content is not relevant.",
           "params": [
