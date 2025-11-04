@@ -22,14 +22,14 @@ function getSdks(firebaseApp: FirebaseApp, isDev: boolean) {
   const firestore = getFirestore(firebaseApp);
   
   if (isDev && typeof window !== 'undefined') {
-    // В рабочей среде Next.js HMR может вызывать это несколько раз. 
-    // Проверяем, был ли эмулятор уже подключен.
+    // Используем свойство emulatorConfig, чтобы надежно проверить, было ли уже установлено соединение.
+    // Это предотвращает ошибки при горячей перезагрузке Next.js (HMR).
     // @ts-ignore
     if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     }
     // @ts-ignore
-    if (!firestore._settings.host.includes('127.0.0.1')) {
+    if (!firestore.emulatorConfig) {
        connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
     }
   }
