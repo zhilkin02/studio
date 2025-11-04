@@ -1,8 +1,14 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Film } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { logout } from '@/app/actions';
 
 export function Header() {
+  const cookieStore = cookies();
+  const session = cookieStore.get('session')?.value;
+  const isAdmin = session === 'admin';
+
   return (
     <header className="bg-background border-b border-border/50 sticky top-0 z-40">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
@@ -11,8 +17,21 @@ export function Header() {
           <span>КоНК</span>
         </Link>
         <div className="flex items-center gap-4">
-          <Button variant="ghost">Войти</Button>
-          <Button variant="outline">Загрузить видео</Button>
+          {isAdmin ? (
+            <>
+              <Button variant="outline">Загрузить видео</Button>
+              <form action={logout}>
+                <Button variant="ghost" type="submit">Выйти</Button>
+              </form>
+            </>
+          ) : (
+            <>
+                <Link href="/login">
+                    <Button variant="ghost">Войти</Button>
+                </Link>
+                <Button variant="outline">Загрузить видео</Button>
+            </>
+          )}
         </div>
       </div>
     </header>
