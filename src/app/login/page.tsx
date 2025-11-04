@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { useAuth, useUser } from "@/firebase/provider";
-import { Button } from "@/components/ui/button";
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth, useUser } from '@/firebase/provider';
+import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 import { Chrome } from 'lucide-react';
 
@@ -24,7 +24,8 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error) {
-      console.error("Ошибка входа через Google:", error);
+      console.error("Authentication Error Details:", error);
+      alert(`Произошла ошибка аутентификации. Подробности в консоли разработчика. Код: ${(error as any).code}`);
     }
   };
 
