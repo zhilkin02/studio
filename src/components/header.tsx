@@ -91,6 +91,12 @@ function AuthButtons() {
             <span>Профиль</span>
           </Link>
         </DropdownMenuItem>
+         <DropdownMenuItem asChild>
+          <Link href="/upload">
+            <Upload className="mr-2 h-4 w-4" />
+            <span>Загрузить видео</span>
+          </Link>
+        </DropdownMenuItem>
         {user.isAdmin && (
            <DropdownMenuItem asChild>
              <Link href="/admin" className="flex items-center justify-between w-full">
@@ -130,12 +136,6 @@ export function Header() {
           />
         </Link>
         <div className="flex items-center gap-4">
-           <Button asChild variant="outline">
-            <Link href="/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Загрузить видео
-            </Link>
-          </Button>
           <AuthButtons />
         </div>
       </div>
