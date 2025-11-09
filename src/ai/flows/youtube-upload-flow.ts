@@ -3,14 +3,13 @@
  * @fileOverview A Genkit flow for uploading videos to a specific YouTube channel.
  *
  * - uploadVideoToYouTube - The exported function that triggers the flow.
- * - UploadVideoInput - The input type for the flow.
- * - UploadVideoOutput - The return type for the flow.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVideoOutputSchema } from '@/ai/schemas/youtube-upload-schema';
+
 
 // ##################################################################################
 // ВАЖНО: Вы должны настроить эти значения в вашей среде.
@@ -19,7 +18,7 @@ import { Readable } from 'stream';
 //    - Перейдите в Google Cloud Console -> APIs & Services -> Credentials.
 //    - Нажмите "Create Credentials" -> "OAuth client ID".
 //    - **ВАЖНО**: Выберите тип приложения "Web application" (Веб-приложение).
-//    - В разделе "Authorized redirect URIs" добавьте `https://developers.google.com/oauthplayground`.
+//    - В разделе "Authorized redirect URIs" ("Разрешенные URI перенаправления") добавьте `https://developers.google.com/oauthplayground`.
 //    - Создайте учетные данные и скопируйте Client ID и Client Secret сюда.
 //
 // 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
@@ -27,7 +26,7 @@ import { Readable } from 'stream';
 //    - Перейдите на https://developers.google.com/oauthplayground
 //    - В правом верхнем углу нажмите на шестеренку (Настройки).
 //    - В открывшемся окне, **поставьте галочку напротив "Use your own OAuth credentials"**.
-//      - В появившиеся поля вставьте ваш Client ID и Client Secret, полученные на шаге 1. Закройте окно настроек.
+//      - В появившиеся поля "OAuth Client ID" и "OAuth Client secret" вставьте ваш Client ID и Client Secret, полученные на шаге 1. Закройте окно настроек.
 //    - Слева, в шаге 1 "Select & authorize APIs", найдите "YouTube Data API v3" и выберите
 //      `https://www.googleapis.com/auth/youtube.upload`.
 //    - Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
@@ -53,20 +52,6 @@ const youtube = google.youtube({
   version: 'v3',
   auth: oauth2Client,
 });
-
-
-export const UploadVideoInputSchema = z.object({
-  title: z.string().describe('The title of the video.'),
-  description: z.string().describe('The description of the video.'),
-  videoDataUri: z.string().describe("The video file as a data URI (e.g., 'data:video/mp4;base64,...')."),
-});
-export type UploadVideoInput = z.infer<typeof UploadVideoInputSchema>;
-
-export const UploadVideoOutputSchema = z.object({
-  videoId: z.string().optional().describe('The ID of the uploaded YouTube video.'),
-  error: z.string().optional().describe('An error message if the upload failed.'),
-});
-export type UploadVideoOutput = z.infer<typeof UploadVideoOutputSchema>;
 
 
 export async function uploadVideoToYouTube(input: UploadVideoInput): Promise<UploadVideoOutput> {
