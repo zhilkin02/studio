@@ -19,7 +19,7 @@ import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVide
 //    - Нажмите "Create Credentials" -> "OAuth client ID".
 //    - **ВАЖНО**: Выберите тип приложения "Web application" (Веб-приложение).
 //    - В разделе "Authorized redirect URIs" ("Разрешенные URI перенаправления") добавьте `https://developers.google.com/oauthplayground`.
-//    - Создайте учетные данные и скопируйте Client ID и Client Secret сюда.
+//    - Создайте учетные данные и скопируйте Client ID и Client Secret в файл .env в корне проекта.
 //
 // 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
 //    Это **одноразовая настройка**.
@@ -31,13 +31,13 @@ import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVide
 //      `https://www.googleapis.com/auth/youtube.upload`.
 //    - Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
 //    - В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
-//      - Вы увидите "Refresh token". Скопируйте его и вставьте ниже.
+//      - Вы увидите "Refresh token". Скопируйте его и вставьте в файл .env.
 //
-// 3. Сохраните REFRESH_TOKEN ниже.
+// 3. Сохраните REFRESH_TOKEN в файле .env.
 // ##################################################################################
-const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '715036389581-lajmllm6hst2m78c9o3hv5vn092ue6af.apps.googleusercontent.com';
-const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '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';
-const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN || '1//04ch-5sfihAOGCgYIARAAGAQSNwF-L9Ir64R28WFyVO5pBASNhiU2ek3lSG5sdmJvSK-QQOyNiUdxfBJEsosZej1WhxEWeTj5FZE';
+const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
+const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
+const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN;
 
 
 const oauth2Client = new google.auth.OAuth2(
@@ -68,7 +68,7 @@ const uploadVideoFlow = ai.defineFlow(
   async (input) => {
     
     // Проверка, что учетные данные YouTube были настроены.
-    if (CLIENT_ID.startsWith('YOUR_') || CLIENT_SECRET.startsWith('YOUR_') || REFRESH_TOKEN.startsWith('YOUR_')) {
+    if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
         const errorMessage = 'YouTube API не настроен на сервере. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts для настройки учетных данных.';
         console.error(errorMessage);
         return { error: errorMessage };
