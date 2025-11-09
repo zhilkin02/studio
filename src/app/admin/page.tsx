@@ -10,7 +10,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -202,6 +202,7 @@ function PublicVideosList() {
     const { toast } = useToast();
     const [mutatingId, setMutatingId] = useState<string | null>(null);
     const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
 
     const publicQuery = useMemo(() => {
@@ -210,6 +211,21 @@ function PublicVideosList() {
     }, [firestore]);
 
     const { data: videos, loading, error } = useCollection(publicQuery, { listen: true });
+
+    const filteredVideos = useMemo(() => {
+        if (!videos) return [];
+        if (!searchQuery) return videos;
+
+        const lowercasedQuery = searchQuery.toLowerCase();
+
+        return (videos as Video[]).filter(video => {
+            const titleMatch = video.title.toLowerCase().includes(lowercasedQuery);
+            const descriptionMatch = video.description && video.description.toLowerCase().includes(lowercasedQuery);
+            const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
+            return titleMatch || descriptionMatch || keywordsMatch;
+        });
+    }, [videos, searchQuery]);
+
 
     const handleDelete = async (video: Video) => {
         if (!firestore) return;
@@ -275,19 +291,30 @@ function PublicVideosList() {
         )
     }
 
-    if (!videos || videos.length === 0) {
-        return (
-            <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
-                <h3 className="text-xl font-semibold text-foreground">Нет опубликованных видео</h3>
-                <p className="text-muted-foreground mt-2">После одобрения они появятся здесь.</p>
-            </div>
-        );
-    }
-
     return (
         <>
+            <div className="mb-6 flex gap-2">
+                <Input
+                    type="search"
+                    placeholder="Поиск по названию, описанию или ключевым словам..."
+                    className="flex-grow"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                 <Button type="button" variant="secondary">
+                    <Search className="mr-2 h-4 w-4" /> Поиск
+                </Button>
+            </div>
+            
+            {filteredVideos.length === 0 && (
+                 <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
+                    <h3 className="text-xl font-semibold text-foreground">{searchQuery ? 'Ничего не найдено' : 'Нет опубликованных видео'}</h3>
+                    <p className="text-muted-foreground mt-2">{searchQuery ? 'Попробуйте изменить поисковый запрос.' : 'После одобрения они появятся здесь.'}</p>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(videos as Video[]).map((video) => {
+                {(filteredVideos as Video[]).map((video) => {
                     const videoId = getYouTubeId(video.filePath);
                     const isMutating = mutatingId === video.id;
                     return (
