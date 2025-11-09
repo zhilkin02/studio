@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { Film, User as UserIcon, LogIn, LogOut, Upload, Shield } from 'lucide-react';
@@ -13,12 +13,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useFirestore } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemo } from 'react';
+import { collection } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
+
 
 function AuthButtons() {
   const { user, loading } = useUser();
   const router = useRouter();
+  const firestore = useFirestore();
+
+  const pendingQuery = useMemo(() => {
+    if (!firestore || !user?.isAdmin) return null;
+    return collection(firestore, 'pendingVideoFragments');
+  }, [firestore, user?.isAdmin]);
+
+  const { data: pendingVideos } = useCollection(pendingQuery, { listen: true });
+  const pendingCount = pendingVideos?.length ?? 0;
+
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -51,6 +67,11 @@ function AuthButtons() {
                 <UserIcon />
               </AvatarFallback>
             </Avatar>
+             {user.isAdmin && pendingCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {pendingCount}
+                </Badge>
+            )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -71,9 +92,14 @@ function AuthButtons() {
         </DropdownMenuItem>
         {user.isAdmin && (
            <DropdownMenuItem asChild>
-             <Link href="/admin">
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Панель администратора</span>
+             <Link href="/admin" className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Панель администратора</span>
+                </div>
+                 {pendingCount > 0 && (
+                    <Badge variant="destructive" className="h-5">{pendingCount}</Badge>
+                )}
              </Link>
            </DropdownMenuItem>
         )}
