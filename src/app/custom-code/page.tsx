@@ -14,7 +14,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { JSDOM } from 'jsdom';
 import DOMPurify from 'dompurify';
 
 export default function CustomCodeEditorPage() {
@@ -54,9 +53,7 @@ export default function CustomCodeEditorPage() {
 
      useEffect(() => {
         // Sanitize HTML for preview on the client side
-        const window = new JSDOM('').window;
-        const purify = DOMPurify(window as any);
-        setSanitizedPreviewHtml(purify.sanitize(htmlContent));
+        setSanitizedPreviewHtml(DOMPurify.sanitize(htmlContent));
     }, [htmlContent]);
 
 

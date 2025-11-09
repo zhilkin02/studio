@@ -6,7 +6,6 @@ import { useMemo, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { JSDOM } from 'jsdom';
 import DOMPurify from 'dompurify';
 
 function CustomPageViewer() {
@@ -22,11 +21,7 @@ function CustomPageViewer() {
 
     useEffect(() => {
         if (data?.html) {
-            // We need a window object for DOMPurify to work on the server.
-            // This setup is safe because we are creating a temporary, isolated DOM.
-            const window = new JSDOM('').window;
-            const purify = DOMPurify(window as any);
-            setSanitizedHtml(purify.sanitize(data.html));
+            setSanitizedHtml(DOMPurify.sanitize(data.html));
         } else {
             setSanitizedHtml('');
         }
