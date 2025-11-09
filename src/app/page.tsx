@@ -118,10 +118,10 @@ function ApprovedVideos() {
             <CardFooter>
                  {videoId && (
                      <Button asChild variant="secondary" className="w-full">
-                        <Link href={`/api/download?videoId=${videoId}`}>
+                        <a href={`https://www.ssyoutube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer">
                             <Download className="mr-2 h-4 w-4" />
                             Скачать
-                        </Link>
+                        </a>
                     </Button>
                  )}
             </CardFooter>
