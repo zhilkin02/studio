@@ -132,7 +132,8 @@ const uploadVideoFlow = ai.defineFlow(
 
     } catch (err: any) {
       console.error('Подробная ошибка в потоке загрузки на YouTube:', err);
-      const originalMessage = err.message.includes(': ') ? err.message.split(': ')[1] : err.message;
+      // Simplify the error message to avoid redundant "Ошибка: Ошибка: ..."
+      const originalMessage = err.message.includes('API') ? err.message.split('error: ')[1] : err.message;
       return { error: `Ошибка при загрузке на YouTube: ${originalMessage}` };
     }
   }
