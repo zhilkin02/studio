@@ -6,50 +6,46 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { google } from 'googleapis';
-import { Readable } from 'stream';
 import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVideoOutputSchema } from '@/ai/schemas/youtube-upload-schema';
-
+import { Readable } from 'stream';
 
 // ##################################################################################
-// ВАЖНО: Вы должны настроить эти значения.
-//
-// 1. CLIENT_ID и CLIENT_SECRET:
-//    - Перейдите в Google Cloud Console -> APIs & Services -> Credentials.
-//    - Нажмите "Create Credentials" -> "OAuth client ID".
-//    - **ВАЖНО**: Выберите тип приложения "Web application" (Веб-приложение).
-//    - В разделе "Authorized redirect URIs" ("Разрешенные URI перенаправления") добавьте `https://developers.google.com/oauthplayground`.
-//    - Создайте учетные данные и скопируйте Client ID и Client Secret сюда.
-//
-// 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
-//    Это **одноразовая настройка**.
-//    - Перейдите на https://developers.google.com/oauthplayground
-//    - В правом верхнем углу нажмите на шестеренку (Настройки).
-//    - В открывшемся окне, **поставьте галочку напротив "Use your own OAuth credentials"**.
-//      - В появившиеся поля "OAuth Client ID" и "OAuth Client secret" вставьте ваш Client ID и Client Secret, полученные на шаге 1. Закройте окно настроек.
-//    - Слева, в шаге 1 "Select & authorize APIs", найдите "YouTube Data API v3" и выберите
-//      `https://www.googleapis.com/auth/youtube.upload`.
-//    - Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
-//    - В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
-//      - Вы увидите "Refresh token". Скопируйте его и вставьте сюда.
-//
-// 3. Убедитесь, что вы ОТОЗВАЛИ доступ старому приложению в настройках аккаунта Google: https://myaccount.google.com/permissions
+// ВАЖНО: Эти значения были вставлены для отладки.
+// Если ошибка сохраняется, проблема не в коде, а в самих учетных данных
+// или настройках проекта Google Cloud.
+// Убедитесь, что YouTube Data API v3 включен:
+// https://console.cloud.google.com/apis/library/youtube.googleapis.com
 // ##################################################################################
 const CLIENT_ID = "715036389581-ok3ottibrbnjvfvut1ggegnsbpo30ijt.apps.googleusercontent.com";
 const CLIENT_SECRET = "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";
 const REFRESH_TOKEN = "1//04A0nP3ylt28dCgYIARAAGAQSNwF-L9IrR5kFZ2rF1CFizsCcsrwLtyyRf-qaih3yRkVdsJl0zfwlM_EEU4MvjhajSZB5uygvXOI";
 
 
-const oauth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-);
-oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+async function getAccessToken() {
+  console.log("Попытка получить новый Access Token...");
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      refresh_token: REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
 
-const youtube = google.youtube({
-  version: 'v3',
-  auth: oauth2Client,
-});
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Ошибка при получении Access Token:", data);
+    throw new Error(`Не удалось обновить токен: ${data.error_description || data.error}`);
+  }
+  
+  console.log("Access Token успешно получен.");
+  return data.access_token;
+}
 
 
 export async function uploadVideoToYouTube(input: UploadVideoInput): Promise<UploadVideoOutput> {
@@ -65,60 +61,74 @@ const uploadVideoFlow = ai.defineFlow(
   },
   async (input) => {
     
-    console.log('--- YouTube Upload Flow ---');
+    console.log('--- YouTube Upload Flow (Manual Fetch) ---');
     console.log('Используемый CLIENT_ID:', CLIENT_ID ? `...${CLIENT_ID.slice(-4)}` : 'НЕ НАЙДЕН');
-    console.log('Используемый REFRESH_TOKEN:', REFRESH_TOKEN ? `...${REFRESH_TOKEN.slice(-4)}` : 'НЕ НАЙДЕН');
     console.log('---------------------------');
 
-    if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
-        const errorMessage = 'Учетные данные YouTube не настроены в коде. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts.';
-        console.error(errorMessage);
-        return { error: errorMessage };
-    }
-
     try {
-      const buffer = Buffer.from(input.videoDataUri.split(',')[1], 'base64');
-      const videoStream = new Readable();
-      videoStream.push(buffer);
-      videoStream.push(null);
+      const accessToken = await getAccessToken();
 
-      const response = await youtube.videos.insert({
-        part: ['snippet', 'status'],
-        requestBody: {
-          snippet: {
-            title: input.title,
-            description: input.description,
-            tags: ['konk', 'media', 'fragment'],
-            categoryId: '24', // Entertainment
-          },
-          status: {
-            privacyStatus: 'unlisted', 
-          },
+      const metadata = {
+        snippet: {
+          title: input.title,
+          description: input.description,
+          tags: ['konk', 'media', 'fragment'],
+          categoryId: '24', // Entertainment
         },
-        media: {
-          body: videoStream,
+        status: {
+          privacyStatus: 'unlisted',
         },
+      };
+
+      const buffer = Buffer.from(input.videoDataUri.split(',')[1], 'base64');
+      
+      console.log('Начало загрузки видео на YouTube...');
+      const uploadResponse = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Upload-Content-Type': 'video/*',
+        },
+        body: JSON.stringify(metadata)
       });
 
-      const videoId = response.data.id;
+      if (!uploadResponse.ok || !uploadResponse.headers.has('location')) {
+         const errorData = await uploadResponse.json();
+         console.error('Ошибка на первом этапе загрузки (создание metadata):', errorData);
+         throw new Error(`API metadata error: ${errorData.error.message}`);
+      }
+
+      const locationUrl = uploadResponse.headers.get('location')!;
+      console.log('Получен URL для загрузки:', locationUrl);
+
+      console.log('Загрузка бинарных данных видео...');
+      const uploadVideoResponse = await fetch(locationUrl, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'video/*'
+          },
+          body: buffer
+      });
+      
+      const responseData = await uploadVideoResponse.json();
+
+      if (!uploadVideoResponse.ok) {
+        console.error('Ошибка на втором этапе загрузки (передача видео):', responseData);
+        throw new Error(`API upload error: ${responseData.error.message}`);
+      }
+
+      const videoId = responseData.id;
       if (!videoId) {
         throw new Error('YouTube API did not return a video ID.');
       }
 
-      console.log(`Successfully uploaded video to YouTube with ID: ${videoId}`);
+      console.log(`Видео успешно загружено на YouTube с ID: ${videoId}`);
       return { videoId: videoId };
 
     } catch (err: any) {
-      console.error('Подробная ошибка при загрузке на YouTube:', JSON.stringify(err, null, 2));
-      
-      let errorMessage = 'An unknown error occurred during YouTube upload.';
-      if (err.response?.data?.error?.message) {
-        errorMessage = err.response.data.error.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      return { error: `Ошибка при загрузке на YouTube: ${errorMessage}` };
+      console.error('Подробная ошибка в потоке загрузки на YouTube:', err);
+      return { error: `Ошибка при загрузке на YouTube: ${err.message}` };
     }
   }
 );
