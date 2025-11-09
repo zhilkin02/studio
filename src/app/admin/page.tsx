@@ -25,6 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 function hexToHsl(hex: string): string | null {
     if (!hex) return null;
@@ -412,7 +414,7 @@ function PendingVideosList() {
 
     if (error) {
         return (
-            <Alert variant="destructive">
+             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Ошибка загрузки видео</AlertTitle>
                 <AlertDescription>
@@ -826,8 +828,38 @@ function AppearanceSettings() {
                                     <Button variant="destructive">Удалить</Button>
                                     <Button variant="outline">Контурная</Button>
                                     <Button variant="link">Ссылка</Button>
+                                     <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline">Поповер</Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80">
+                                            <div className="grid gap-4">
+                                                <div className="space-y-2">
+                                                    <h4 className="font-medium leading-none">Пример поповера</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                       Это содержимое всплывающего окна.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 
+                                <div>
+                                    <Tabs defaultValue="account" className="w-full">
+                                      <TabsList>
+                                        <TabsTrigger value="account">Аккаунт</TabsTrigger>
+                                        <TabsTrigger value="password">Пароль</TabsTrigger>
+                                      </TabsList>
+                                      <TabsContent value="account" className="border rounded-md p-4">
+                                        Это содержимое вкладки "Аккаунт".
+                                      </TabsContent>
+                                      <TabsContent value="password">
+                                        Это содержимое вкладки "Пароль".
+                                      </TabsContent>
+                                    </Tabs>
+                                </div>
+
                                 <div>
                                     <FormLabel htmlFor="preview-input">Поле ввода</FormLabel>
                                     <Input id="preview-input" placeholder="Введите текст..."/>
@@ -899,3 +931,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
