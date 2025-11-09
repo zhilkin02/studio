@@ -93,16 +93,13 @@ export default function UploadPage() {
                 videoDataUri: videoDataUri,
             });
             
-            setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
-            setUploadProgress(75);
-
             if (!result || !result.videoId) {
                 let description = result.error || 'Не удалось получить ID видео от YouTube.';
-                 if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
-                    description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
-                }
                  throw new Error(description);
             }
+
+            setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
+            setUploadProgress(75);
 
             const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
             const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
@@ -116,7 +113,7 @@ export default function UploadPage() {
                 uploadDate: serverTimestamp(),
             };
 
-            await addDoc(pendingCollectionRef, docData);
+            const docRef = await addDoc(pendingCollectionRef, docData);
 
             setUploadProgress(100);
             setUploadMessage("Готово!");
@@ -136,6 +133,8 @@ export default function UploadPage() {
              let errorMessage = e.message || 'Произошла неизвестная ошибка.';
             if (errorMessage.includes('uploadLimitExceeded') || errorMessage.includes('exceeded the number of videos')) {
                 errorMessage = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+            } else if (errorMessage.includes('invalid_client')) {
+                errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные.";
             }
 
             toast({

@@ -145,7 +145,7 @@ function PublicVideosList() {
         return query(collection(firestore, 'publicVideoFragments'), orderBy('uploadDate', 'desc'));
     }, [firestore]);
 
-    const { data: videos, loading, error, setData } = useCollection(publicQuery, { listen: true });
+    const { data: videos, loading, error } = useCollection(publicQuery, { listen: true });
 
     const handleDelete = async (video: Video) => {
         if (!firestore) return;
@@ -266,7 +266,7 @@ function PendingVideosList() {
         return query(collection(firestore, 'pendingVideoFragments'), orderBy('uploadDate', 'desc'));
     }, [firestore]);
 
-    const { data: videos, loading, error, setData } = useCollection(pendingQuery, { listen: true });
+    const { data: videos, loading, error } = useCollection(pendingQuery, { listen: true });
 
 
     const handleApprove = async (video: Video) => {
