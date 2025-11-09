@@ -466,21 +466,24 @@ function PendingVideosList() {
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.');
 const appearanceFormSchema = z.object({
   primaryHex: hexColor,
-  backgroundHex: hexColor,
-  accentHex: hexColor,
-  foregroundHex: hexColor,
-  cardHex: hexColor,
-  cardForegroundHex: hexColor,
-  popoverHex: hexColor,
-  popoverForegroundHex: hexColor,
   secondaryHex: hexColor,
-  secondaryForegroundHex: hexColor,
+  backgroundHex: hexColor,
+  foregroundHex: hexColor,
+  accentHex: hexColor,
   mutedHex: hexColor,
-  mutedForegroundHex: hexColor,
-  accentForegroundHex: hexColor,
+  destructiveHex: hexColor,
+  cardHex: hexColor,
   borderHex: hexColor,
   inputHex: hexColor,
   ringHex: hexColor,
+  primaryForegroundHex: hexColor,
+  secondaryForegroundHex: hexColor,
+  accentForegroundHex: hexColor,
+  mutedForegroundHex: hexColor,
+  destructiveForegroundHex: hexColor,
+  cardForegroundHex: hexColor,
+  popoverHex: hexColor,
+  popoverForegroundHex: hexColor,
   headerImageUrl: z.string().url().optional().or(z.literal('')),
   mainImageUrl: z.string().url().optional().or(z.literal('')),
   footerImageUrl: z.string().url().optional().or(z.literal('')),
@@ -508,27 +511,54 @@ function AppearanceSettings() {
         if (themeSettings) {
             form.reset({
                 primaryHex: themeSettings.primaryHex || '#8b5cf6',
-                backgroundHex: themeSettings.backgroundHex || '#111827',
-                accentHex: themeSettings.accentHex || '#34d399',
-                foregroundHex: themeSettings.foregroundHex || '#f8fafc',
-                cardHex: themeSettings.cardHex || '#1f2937',
-                cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
-                popoverHex: themeSettings.popoverHex || '#111827',
-                popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
                 secondaryHex: themeSettings.secondaryHex || '#374151',
-                secondaryForegroundHex: themeSettings.secondaryForegroundHex || '#f9fafb',
+                backgroundHex: themeSettings.backgroundHex || '#111827',
+                foregroundHex: themeSettings.foregroundHex || '#f8fafc',
+                accentHex: themeSettings.accentHex || '#34d399',
                 mutedHex: themeSettings.mutedHex || '#374151',
-                mutedForegroundHex: themeSettings.mutedForegroundHex || '#9ca3af',
-                accentForegroundHex: themeSettings.accentForegroundHex || '#111827',
+                destructiveHex: themeSettings.destructiveHex || '#ef4444',
+                cardHex: themeSettings.cardHex || '#1f2937',
                 borderHex: themeSettings.borderHex || '#374151',
                 inputHex: themeSettings.inputHex || '#374151',
                 ringHex: themeSettings.ringHex || '#8b5cf6',
+                primaryForegroundHex: themeSettings.primaryForegroundHex || '#f8fafc',
+                secondaryForegroundHex: themeSettings.secondaryForegroundHex || '#f9fafb',
+                accentForegroundHex: themeSettings.accentForegroundHex || '#111827',
+                mutedForegroundHex: themeSettings.mutedForegroundHex || '#9ca3af',
+                destructiveForegroundHex: themeSettings.destructiveForegroundHex || '#f8fafc',
+                cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
+                popoverHex: themeSettings.popoverHex || '#111827',
+                popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
                 headerImageUrl: themeSettings.headerImageUrl || '',
                 mainImageUrl: themeSettings.mainImageUrl || '',
                 footerImageUrl: themeSettings.footerImageUrl || '',
             });
         }
     }, [themeSettings, form]);
+
+    const watchedValues = form.watch();
+
+    const previewStyle: React.CSSProperties = {
+        '--background': hexToHsl(watchedValues.backgroundHex ?? ''),
+        '--foreground': hexToHsl(watchedValues.foregroundHex ?? ''),
+        '--card': hexToHsl(watchedValues.cardHex ?? ''),
+        '--card-foreground': hexToHsl(watchedValues.cardForegroundHex ?? ''),
+        '--popover': hexToHsl(watchedValues.popoverHex ?? ''),
+        '--popover-foreground': hexToHsl(watchedValues.popoverForegroundHex ?? ''),
+        '--primary': hexToHsl(watchedValues.primaryHex ?? ''),
+        '--primary-foreground': hexToHsl(watchedValues.primaryForegroundHex ?? ''),
+        '--secondary': hexToHsl(watchedValues.secondaryHex ?? ''),
+        '--secondary-foreground': hexToHsl(watchedValues.secondaryForegroundHex ?? ''),
+        '--muted': hexToHsl(watchedValues.mutedHex ?? ''),
+        '--muted-foreground': hexToHsl(watchedValues.mutedForegroundHex ?? ''),
+        '--accent': hexToHsl(watchedValues.accentHex ?? ''),
+        '--accent-foreground': hexToHsl(watchedValues.accentForegroundHex ?? ''),
+        '--destructive': hexToHsl(watchedValues.destructiveHex ?? ''),
+        '--destructive-foreground': hexToHsl(watchedValues.destructiveForegroundHex ?? ''),
+        '--border': hexToHsl(watchedValues.borderHex ?? ''),
+        '--input': hexToHsl(watchedValues.inputHex ?? ''),
+        '--ring': hexToHsl(watchedValues.ringHex ?? ''),
+    } as React.CSSProperties;
 
 
     const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
@@ -553,6 +583,7 @@ function AppearanceSettings() {
         setIsSubmitting(true);
         
         const themeData = {
+            ...values,
             background: hexToHsl(values.backgroundHex),
             foreground: hexToHsl(values.foregroundHex),
             card: hexToHsl(values.cardHex),
@@ -567,13 +598,11 @@ function AppearanceSettings() {
             mutedForeground: hexToHsl(values.mutedForegroundHex),
             accent: hexToHsl(values.accentHex),
             accentForeground: hexToHsl(values.accentForegroundHex),
+            destructive: hexToHsl(values.destructiveHex),
+            destructiveForeground: hexToHsl(values.destructiveForegroundHex),
             border: hexToHsl(values.borderHex),
             input: hexToHsl(values.inputHex),
             ring: hexToHsl(values.ringHex),
-            ...values, // This includes all the ...Hex values
-            headerImageUrl: values.headerImageUrl,
-            mainImageUrl: values.mainImageUrl,
-            footerImageUrl: values.footerImageUrl,
         };
         
         setDoc(themeDocRef, themeData, { merge: true })
@@ -604,7 +633,7 @@ function AppearanceSettings() {
     if (loading) {
         return (
             <Card>
-                <CardHeader><CardTitle>Внешний вид</CardTitle><CardDescription>Настройте цветовую схему и фоновые изображения сайта.</CardDescription></CardHeader>
+                <CardHeader><Skeleton className="h-8 w-1/3" /><Skeleton className="h-4 w-2/3 mt-2" /></CardHeader>
                 <CardContent className="space-y-8">
                      <div className="space-y-4">
                         <Skeleton className="h-10 w-full" />
@@ -702,72 +731,124 @@ function AppearanceSettings() {
             <CardHeader>
                 <CardTitle>Внешний вид</CardTitle>
                 <CardDescription>
-                    Настройте цветовую схему и фоновые изображения для всего сайта.
+                    Настройте цветовую схему и фоновые изображения для всего сайта. Изменения сразу отобразятся в панели предпросмотра.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                         <div>
-                             <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <ColorPickerInput name="primaryHex" label="Основной" />
-                                <ColorPickerInput name="primaryForegroundHex" label="Текст на основном" />
-                                <ColorPickerInput name="secondaryHex" label="Вторичный" />
-                                <ColorPickerInput name="secondaryForegroundHex" label="Текст на вторичном" />
-                                <ColorPickerInput name="accentHex" label="Акцент" />
-                                <ColorPickerInput name="accentForegroundHex" label="Текст на акценте" />
-                                <ColorPickerInput name="destructive" label="Ошибки / Удаление" />
-                                <ColorPickerInput name="destructiveForeground" label="Текст на ошибках" />
-                             </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                             <div>
+                                 <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <ColorPickerInput name="primaryHex" label="Основной" />
+                                    <ColorPickerInput name="primaryForegroundHex" label="Текст на основном" />
+                                    <ColorPickerInput name="secondaryHex" label="Вторичный" />
+                                    <ColorPickerInput name="secondaryForegroundHex" label="Текст на вторичном" />
+                                    <ColorPickerInput name="accentHex" label="Акцент" />
+                                    <ColorPickerInput name="accentForegroundHex" label="Текст на акценте" />
+                                 </div>
+                            </div>
+
+                            <Separator />
+                             <div>
+                                 <h3 className="text-lg font-medium mb-4">Фон и текст</h3>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <ColorPickerInput name="backgroundHex" label="Фон сайта" />
+                                    <ColorPickerInput name="foregroundHex" label="Основной текст" />
+                                    <ColorPickerInput name="mutedHex" label="Приглушенный фон" />
+                                    <ColorPickerInput name="mutedForegroundHex" label="Приглушенный текст" />
+                                  </div>
+                            </div>
+                            
+                            <Separator />
+                             <div>
+                                 <h3 className="text-lg font-medium mb-4">Компоненты</h3>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <ColorPickerInput name="cardHex" label="Фон карточки" />
+                                    <ColorPickerInput name="cardForegroundHex" label="Текст на карточке" />
+                                    <ColorPickerInput name="popoverHex" label="Фон поповера" />
+                                    <ColorPickerInput name="popoverForegroundHex" label="Текст на поповере" />
+                                    <ColorPickerInput name="borderHex" label="Рамки" />
+                                    <ColorPickerInput name="inputHex" label="Поля ввода" />
+                                    <ColorPickerInput name="ringHex" label="Кольцо фокуса" />
+                                  </div>
+                            </div>
+                            
+                            <Separator />
+                            <div>
+                                <h3 className="text-lg font-medium mb-4">Ошибки / Удаление</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <ColorPickerInput name="destructiveHex" label="Цвет ошибок" />
+                                    <ColorPickerInput name="destructiveForegroundHex" label="Текст на ошибках" />
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div>
+                                 <h3 className="text-lg font-medium mb-4">Фоновые изображения</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <ImageUploader fieldName="headerImageUrl" label="Изображение шапки"/>
+                                    <ImageUploader fieldName="mainImageUrl" label="Изображение контента"/>
+                                    <ImageUploader fieldName="footerImageUrl" label="Изображение подвала"/>
+                                  </div>
+                            </div>
+
+                            <Button type="submit" disabled={isSubmitting || !!imageUploading}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить изменения'}
+                            </Button>
+                        </form>
+                    </Form>
+                    
+                    {/* --- PREVIEW PANEL --- */}
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-medium">Панель предпросмотра</h3>
+                         <div style={previewStyle} className="rounded-lg border p-6 bg-background text-foreground space-y-6">
+                            
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Пример карточки</CardTitle>
+                                    <CardDescription>Это описание карточки.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <p>Это основной контент внутри карточки. Здесь используется цвет текста карточки.</p>
+                                </CardContent>
+                                <CardFooter className="flex justify-between">
+                                    <Button variant="ghost">Отмена</Button>
+                                    <Button>Принять</Button>
+                                </CardFooter>
+                            </Card>
+
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <Button>Основная</Button>
+                                <Button variant="secondary">Вторичная</Button>
+                                <Button variant="destructive">Удалить</Button>
+                                <Button variant="outline">Контурная</Button>
+                                <Button variant="link">Ссылка</Button>
+                            </div>
+                            
+                            <div>
+                                <FormLabel htmlFor="preview-input">Поле ввода</FormLabel>
+                                <Input id="preview-input" placeholder="Введите текст..."/>
+                            </div>
+
+                            <Alert variant="default">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Обычное уведомление</AlertTitle>
+                                <AlertDescription>Это пример обычного уведомления для информации.</AlertDescription>
+                            </Alert>
+                             <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Уведомление об ошибке</AlertTitle>
+                                <AlertDescription>Это пример уведомления об ошибке.</AlertDescription>
+                            </Alert>
+
+                            <p>Это <span className="text-primary">основной</span>, <span className="text-secondary">вторичный</span>, <span className="text-accent">акцентный</span> и <span className="text-muted-foreground">приглушенный</span> текст.</p>
                         </div>
-
-                        <Separator />
-
-                        <div>
-                             <h3 className="text-lg font-medium mb-4">Фон и текст</h3>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <ColorPickerInput name="backgroundHex" label="Фон сайта" />
-                                <ColorPickerInput name="foregroundHex" label="Основной текст" />
-                                <ColorPickerInput name="mutedHex" label="Приглушенный фон" />
-                                <ColorPickerInput name="mutedForegroundHex" label="Приглушенный текст" />
-                              </div>
-                        </div>
-                        
-                        <Separator />
-                        
-                         <div>
-                             <h3 className="text-lg font-medium mb-4">Компоненты</h3>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <ColorPickerInput name="cardHex" label="Фон карточки" />
-                                <ColorPickerInput name="cardForegroundHex" label="Текст на карточке" />
-                                <ColorPickerInput name="popoverHex" label="Фон поповера" />
-                                <ColorPickerInput name="popoverForegroundHex" label="Текст на поповере" />
-                                <ColorPickerInput name="borderHex" label="Рамки" />
-                                <ColorPickerInput name="inputHex" label="Поля ввода" />
-                                <ColorPickerInput name="ringHex" label="Кольцо фокуса" />
-                              </div>
-                        </div>
-
-
-                        <Separator />
-
-                        <div>
-                             <h3 className="text-lg font-medium mb-4">Фоновые изображения</h3>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <ImageUploader fieldName="headerImageUrl" label="Изображение шапки"/>
-                                <ImageUploader fieldName="mainImageUrl" label="Изображение контента"/>
-                                <ImageUploader fieldName="footerImageUrl" label="Изображение подвала"/>
-                              </div>
-                        </div>
-
-
-                        <Button type="submit" disabled={isSubmitting || !!imageUploading}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить'}
-                        </Button>
-                    </form>
-                </Form>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )
@@ -818,3 +899,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
+
+    
