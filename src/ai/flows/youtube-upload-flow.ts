@@ -38,7 +38,7 @@ import { Readable } from 'stream';
 // ##################################################################################
 const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '715036389581-lajmllm6hst2m78c9o3hv5vn092ue6af.apps.googleusercontent.com';
 const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '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';
-const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN || 'YOUR_REFRESH_TOKEN'; // <-- ВСТАВЬТЕ ВАШ REFRESH TOKEN СЮДА
+const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN || '1//04ch-5sfihAOGCgYIARAAGAQSNwF-L9Ir64R28WFyVO5pBASNhiU2ek3lSG5sdmJvSK-QQOyNiUdxfBJEsosZej1WhxEWeTj5FZE';
 
 
 const oauth2Client = new google.auth.OAuth2(
