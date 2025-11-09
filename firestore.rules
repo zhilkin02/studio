@@ -18,7 +18,7 @@ service cloud.firestore {
     // Only admins can create, update, or delete them.
     match /publicVideoFragments/{videoId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin(); // write includes create, update, delete
     }
 
     // --- User-Specific Content ---
@@ -36,7 +36,7 @@ service cloud.firestore {
     }
 
     // --- Admin Roles ---
-    // A user can check if they are an admin (get their own role doc).
+    // A user can check if they are an admin (read their own role doc).
     // Only other admins can view the full list or change admin roles.
     match /roles_admin/{userId} {
       allow read: if isOwner(userId);
