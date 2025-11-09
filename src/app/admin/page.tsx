@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 
 
 function hexToHsl(hex: string): string | null {
@@ -262,6 +263,7 @@ const appearanceFormSchema = z.object({
   cardForegroundHex: hexColor,
   popoverHex: hexColor,
   popoverForegroundHex: hexColor,
+  cardOpacity: z.number().min(0).max(1),
 });
 
 
@@ -303,6 +305,7 @@ function AppearanceSettings() {
                 cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
                 popoverHex: themeSettings.popoverHex || '#111827',
                 popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
+                cardOpacity: themeSettings.cardOpacity ?? 1,
             });
         }
     }, [themeSettings, form]);
@@ -329,6 +332,7 @@ function AppearanceSettings() {
         '--border': hexToHsl(watchedValues.borderHex ?? ''),
         '--input': hexToHsl(watchedValues.inputHex ?? ''),
         '--ring': hexToHsl(watchedValues.ringHex ?? ''),
+        '--card-opacity': watchedValues.cardOpacity ?? 1,
     } as React.CSSProperties;
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
@@ -356,6 +360,7 @@ function AppearanceSettings() {
             border: hexToHsl(values.borderHex),
             input: hexToHsl(values.inputHex),
             ring: hexToHsl(values.ringHex),
+            cardOpacity: values.cardOpacity,
         };
         
         setDoc(themeDocRef, themeData, { merge: true })
@@ -490,6 +495,31 @@ function AppearanceSettings() {
                                     <ColorPickerInput name="inputHex" label="Поля ввода" />
                                     <ColorPickerInput name="ringHex" label="Кольцо фокуса" />
                                   </div>
+                            </div>
+
+                             <Separator />
+                            <div>
+                                <h3 className="text-lg font-medium mb-4">Прозрачность</h3>
+                                <FormField
+                                    control={form.control}
+                                    name="cardOpacity"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Прозрачность карточки ({field.value.toFixed(2)})</FormLabel>
+                                            <FormControl>
+                                                <Slider
+                                                    defaultValue={[1]}
+                                                    value={[field.value]}
+                                                    min={0}
+                                                    max={1}
+                                                    step={0.05}
+                                                    onValueChange={(value) => field.onChange(value[0])}
+                                                    disabled={isSubmitting}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                             
                             <Separator />
@@ -632,4 +662,5 @@ export default function AdminPage() {
   );
 }
 
+    
     
