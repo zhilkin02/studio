@@ -12,14 +12,14 @@ import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVide
 
 
 // ##################################################################################
-// ВАЖНО: Вы должны настроить эти значения в вашей среде.
+// ВАЖНО: Вы должны настроить эти значения.
 //
 // 1. CLIENT_ID и CLIENT_SECRET:
 //    - Перейдите в Google Cloud Console -> APIs & Services -> Credentials.
 //    - Нажмите "Create Credentials" -> "OAuth client ID".
 //    - **ВАЖНО**: Выберите тип приложения "Web application" (Веб-приложение).
 //    - В разделе "Authorized redirect URIs" ("Разрешенные URI перенаправления") добавьте `https://developers.google.com/oauthplayground`.
-//    - Создайте учетные данные и скопируйте Client ID и Client Secret в файл .env в корне проекта.
+//    - Создайте учетные данные и скопируйте Client ID и Client Secret сюда.
 //
 // 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
 //    Это **одноразовая настройка**.
@@ -31,13 +31,13 @@ import { UploadVideoInput, UploadVideoInputSchema, UploadVideoOutput, UploadVide
 //      `https://www.googleapis.com/auth/youtube.upload`.
 //    - Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
 //    - В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
-//      - Вы увидите "Refresh token". Скопируйте его и вставьте в файл .env.
+//      - Вы увидите "Refresh token". Скопируйте его и вставьте сюда.
 //
-// 3. Сохраните REFRESH_TOKEN в файле .env.
+// 3. Убедитесь, что вы ОТОЗВАЛИ доступ старому приложению в настройках аккаунта Google: https://myaccount.google.com/permissions
 // ##################################################################################
-const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
-const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
-const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN;
+const CLIENT_ID = "715036389581-ok3ottibrbnjvfvut1ggegnsbpo30ijt.apps.googleusercontent.com";
+const CLIENT_SECRET = "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";
+const REFRESH_TOKEN = "1//04ch-5sfihAOGCgYIARAAGAQSNwF-L9Ir64R28WFyVO5pBASNhiU2ek3lSG5sdmJvSK-QQOyNiUdxfBJEsosZej1WhxEWeTj5FZE";
 
 
 const oauth2Client = new google.auth.OAuth2(
@@ -65,22 +65,18 @@ const uploadVideoFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // DEBUG: Логирование учетных данных для проверки, что они загружены
     console.log('--- YouTube Upload Flow ---');
     console.log('Используемый CLIENT_ID:', CLIENT_ID ? `...${CLIENT_ID.slice(-4)}` : 'НЕ НАЙДЕН');
-    console.log('Используемый CLIENT_SECRET:', CLIENT_SECRET ? `...${CLIENT_SECRET.slice(-4)}` : 'НЕ НАЙДЕН');
     console.log('Используемый REFRESH_TOKEN:', REFRESH_TOKEN ? `...${REFRESH_TOKEN.slice(-4)}` : 'НЕ НАЙДЕН');
     console.log('---------------------------');
 
-    // Проверка, что учетные данные YouTube были настроены.
     if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
-        const errorMessage = 'YouTube API не настроен на сервере. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts для настройки учетных данных.';
+        const errorMessage = 'Учетные данные YouTube не настроены в коде. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts.';
         console.error(errorMessage);
         return { error: errorMessage };
     }
 
     try {
-      // Преобразование data URI в Buffer, а затем в Readable Stream для API
       const buffer = Buffer.from(input.videoDataUri.split(',')[1], 'base64');
       const videoStream = new Readable();
       videoStream.push(buffer);
@@ -96,7 +92,7 @@ const uploadVideoFlow = ai.defineFlow(
             categoryId: '24', // Entertainment
           },
           status: {
-            privacyStatus: 'unlisted', // 'private', 'public', или 'unlisted'. 'unlisted' лучше всего для модерации.
+            privacyStatus: 'unlisted', 
           },
         },
         media: {
@@ -113,9 +109,8 @@ const uploadVideoFlow = ai.defineFlow(
       return { videoId: videoId };
 
     } catch (err: any) {
-      console.error('Error uploading to YouTube:', err);
+      console.error('Подробная ошибка при загрузке на YouTube:', JSON.stringify(err, null, 2));
       
-      // Попытка извлечь более понятное сообщение об ошибке из ответа API
       let errorMessage = 'An unknown error occurred during YouTube upload.';
       if (err.response?.data?.error?.message) {
         errorMessage = err.response.data.error.message;
