@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ytdl from 'ytdl-core';
+import { PassThrough } from 'stream';
+
+// This function converts the ytdl stream into a ReadableStream that NextResponse can handle.
+function streamToReadableStream(stream: PassThrough): ReadableStream {
+  return new ReadableStream({
+    start(controller) {
+      stream.on('data', (chunk) => controller.enqueue(chunk));
+      stream.on('end', () => controller.close());
+      stream.on('error', (err) => controller.error(err));
+    },
+  });
+}
 
 export async function GET(request: NextRequest) {
     try {
@@ -19,7 +31,7 @@ export async function GET(request: NextRequest) {
         // Find a format that has both video and audio
         let format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'videoandaudio' });
 
-        // If no combined format is found, this is a fallback (though less likely for modern videos)
+        // If no combined format is found, fallback to highest quality video-only
         if (!format) {
              format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
              if(!format) {
@@ -27,15 +39,22 @@ export async function GET(request: NextRequest) {
              }
         }
 
-        // Get the readable stream
+        // Get the readable stream from ytdl
         const videoStream = ytdl(videoUrl, { format });
         
+        // Convert it to a format compatible with NextResponse
+        const readableStream = streamToReadableStream(videoStream);
+
         const headers = new Headers();
-        headers.set('Content-Type', 'video/mp4');
+        headers.set('Content-Type', format.mimeType || 'video/mp4');
         headers.set('Content-Disposition', `attachment; filename="${title}.mp4"`);
+        // The content length can vary, so it's better not to set it for streams
+        // if (format.contentLength) {
+        //     headers.set('Content-Length', format.contentLength);
+        // }
 
         // Use NextResponse to stream the response
-        return new NextResponse(videoStream as any, { headers });
+        return new NextResponse(readableStream, { headers });
 
     } catch (error: any) {
         console.error('Failed to download video:', error);
