@@ -151,10 +151,15 @@ export default function UploadPage() {
 
     } catch (e: any) {
         console.error("Error in upload process:", e);
+        let description = e.message || 'Произошла неизвестная ошибка.';
+        if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
+            description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+        }
+        
         toast({
             variant: "destructive",
             title: "Ошибка загрузки",
-            description: e.message || 'Произошла неизвестная ошибка.',
+            description: description,
         });
         setUploadProgress(0);
         setUploadMessage('');
