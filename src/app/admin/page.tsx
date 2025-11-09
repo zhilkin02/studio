@@ -467,6 +467,7 @@ const appearanceFormSchema = z.object({
   primary: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
   background: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
   accent: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
+  foreground: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
   headerImageUrl: z.string().url().optional().or(z.literal('')),
   mainImageUrl: z.string().url().optional().or(z.literal('')),
   footerImageUrl: z.string().url().optional().or(z.literal('')),
@@ -492,6 +493,7 @@ function AppearanceSettings() {
             primary: themeSettings?.primaryHex || '#8b5cf6',
             background: themeSettings?.backgroundHex || '#111827',
             accent: themeSettings?.accentHex || '#34d399',
+            foreground: themeSettings?.foregroundHex || '#f8fafc',
             headerImageUrl: themeSettings?.headerImageUrl || '',
             mainImageUrl: themeSettings?.mainImageUrl || '',
             footerImageUrl: themeSettings?.footerImageUrl || '',
@@ -504,6 +506,7 @@ function AppearanceSettings() {
                 primary: themeSettings.primaryHex || '#8b5cf6',
                 background: themeSettings.backgroundHex || '#111827',
                 accent: themeSettings.accentHex || '#34d399',
+                foreground: themeSettings.foregroundHex || '#f8fafc',
                 headerImageUrl: themeSettings.headerImageUrl || '',
                 mainImageUrl: themeSettings.mainImageUrl || '',
                 footerImageUrl: themeSettings.footerImageUrl || '',
@@ -536,9 +539,11 @@ function AppearanceSettings() {
             primary: hexToHsl(values.primary),
             background: hexToHsl(values.background),
             accent: hexToHsl(values.accent),
+            foreground: hexToHsl(values.foreground),
             primaryHex: values.primary,
             backgroundHex: values.background,
             accentHex: values.accent,
+            foregroundHex: values.foreground,
             headerImageUrl: values.headerImageUrl,
             mainImageUrl: values.mainImageUrl,
             footerImageUrl: values.footerImageUrl,
@@ -639,6 +644,32 @@ function AppearanceSettings() {
         )
     }
 
+    const ColorPickerInput = ({ name, label }: { name: 'primary' | 'background' | 'accent' | 'foreground', label: string }) => (
+        <FormField
+            control={form.control}
+            name={name}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>{label}</FormLabel>
+                    <FormControl>
+                            <div className="relative">
+                            <Input {...field} disabled={isSubmitting} className="pr-12" />
+                            <Controller
+                                name={name}
+                                control={form.control}
+                                render={({ field: { onChange, value } }) => (
+                                    <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                )}
+                            />
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+
+
     return (
         <Card>
             <CardHeader>
@@ -652,73 +683,11 @@ function AppearanceSettings() {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                         <div>
                              <h3 className="text-lg font-medium mb-4">Цветовая схема</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="primary"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Основной</FormLabel>
-                                            <FormControl>
-                                                 <div className="relative">
-                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
-                                                    <Controller
-                                                        name="primary"
-                                                        control={form.control}
-                                                        render={({ field: { onChange, value } }) => (
-                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="background"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Фон</FormLabel>
-                                            <FormControl>
-                                                 <div className="relative">
-                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
-                                                    <Controller
-                                                        name="background"
-                                                        control={form.control}
-                                                        render={({ field: { onChange, value } }) => (
-                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="accent"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Акцент</FormLabel>
-                                            <FormControl>
-                                                 <div className="relative">
-                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
-                                                    <Controller
-                                                        name="accent"
-                                                        control={form.control}
-                                                        render={({ field: { onChange, value } }) => (
-                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <ColorPickerInput name="primary" label="Основной" />
+                                <ColorPickerInput name="foreground" label="Текст" />
+                                <ColorPickerInput name="background" label="Фон" />
+                                <ColorPickerInput name="accent" label="Акцент" />
                              </div>
                         </div>
 

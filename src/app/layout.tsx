@@ -27,6 +27,7 @@ async function ThemeLoader() {
       const style = `
         :root {
           ${theme.background ? `--background: ${theme.background};` : ''}
+          ${theme.foreground ? `--foreground: ${theme.foreground};` : ''}
           ${theme.primary ? `--primary: ${theme.primary};` : ''}
           ${theme.accent ? `--accent: ${theme.accent};` : ''}
           ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
@@ -35,6 +36,7 @@ async function ThemeLoader() {
         }
         .dark {
            ${theme.background ? `--background: ${theme.background};` : ''}
+           ${theme.foreground ? `--foreground: ${theme.foreground};` : ''}
            ${theme.primary ? `--primary: ${theme.primary};` : ''}
            ${theme.accent ? `--accent: ${theme.accent};` : ''}
            ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}

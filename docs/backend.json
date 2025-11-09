@@ -108,6 +108,10 @@
           "type": "string",
           "description": "Accent color in HSL format (e.g., '190 95% 55%')."
         },
+        "foreground": {
+          "type": "string",
+          "description": "Foreground (text) color in HSL format (e.g., '0 0% 98%')."
+        },
         "primaryHex": {
             "type": "string",
             "description": "Primary color in HEX format for the color picker (e.g., '#8b5cf6')."
@@ -119,6 +123,10 @@
         "accentHex": {
             "type": "string",
             "description": "Accent color in HEX format for the color picker (e.g., '#34d399')."
+        },
+        "foregroundHex": {
+            "type": "string",
+            "description": "Foreground (text) color in HEX format for the color picker (e.g., '#f8fafc')."
         },
         "headerImageUrl": {
             "type": "string",
