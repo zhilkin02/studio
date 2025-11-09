@@ -10,6 +10,7 @@ import { useFirestore } from '@/firebase';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React from "react";
+import { EditableText } from "@/components/editable-text";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -136,12 +137,20 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
         <section className="text-center py-16">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-            Коротко О Не Коротком
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8">
-            Найдите идеальный фрагмент из фильма или сериала за секунды.
-            </p>
+            <EditableText
+              docPath="site_content/main"
+              fieldKey="home_title"
+              defaultValue="Коротко О Не Коротком"
+              render={(text) => <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">{text}</h1>}
+              textarea={false}
+            />
+            <EditableText
+              docPath="site_content/main"
+              fieldKey="home_subtitle"
+              defaultValue="Найдите идеальный фрагмент из фильма или сериала за секунды."
+              render={(text) => <p className="text-lg md:text-xl text-muted-foreground mb-8">{text}</p>}
+              textarea={true}
+            />
         </section>
       
       <section className="mb-12">
@@ -164,3 +173,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

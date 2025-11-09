@@ -31,6 +31,14 @@ service cloud.firestore {
         allow write: if isAdmin();
     }
 
+    // --- Editable Site Content ---
+    // Anyone can read the site's text content.
+    // Only admins can change it.
+    match /site_content/{contentId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
+
     // --- User-Specific Content ---
     // A user can read and write to their own user profile. No one else can.
     match /users/{userId} {
@@ -64,3 +72,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
