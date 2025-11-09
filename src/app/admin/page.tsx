@@ -5,11 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Palette } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -401,6 +402,152 @@ function PendingVideosList() {
     );
 }
 
+const appearanceFormSchema = z.object({
+  primary: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 262 80% 50%'),
+  background: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 240 5% 8%'),
+  accent: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 190 95% 55%'),
+});
+
+
+function AppearanceSettings() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const themeDocRef = useMemo(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'site_settings', 'theme');
+    }, [firestore]);
+
+    const { data: themeSettings, loading, error } = useDoc(themeDocRef, { listen: true });
+
+    const form = useForm<z.infer<typeof appearanceFormSchema>>({
+        resolver: zodResolver(appearanceFormSchema),
+        values: {
+            primary: themeSettings?.primary || '',
+            background: themeSettings?.background || '',
+            accent: themeSettings?.accent || '',
+        },
+    });
+
+    useEffect(() => {
+        if (themeSettings) {
+            form.reset({
+                primary: themeSettings.primary || '',
+                background: themeSettings.background || '',
+                accent: themeSettings.accent || '',
+            });
+        }
+    }, [themeSettings, form]);
+
+    async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
+        if (!themeDocRef) return;
+        setIsSubmitting(true);
+        try {
+            await setDoc(themeDocRef, values, { merge: true });
+            toast({
+                title: "Настройки сохранены",
+                description: "Внешний вид сайта был успешно обновлен.",
+            });
+        } catch (e: any) {
+            console.error("Error saving theme settings:", e);
+            toast({
+                variant: "destructive",
+                title: "Ошибка сохранения",
+                description: e.message || "Не удалось сохранить настройки темы.",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader><CardTitle>Внешний вид</CardTitle><CardDescription>Настройте цветовую схему сайта.</CardDescription></CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-32" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    if (error) {
+        return (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Ошибка загрузки настроек</AlertTitle>
+                <AlertDescription>
+                    Не удалось получить данные темы. Проверьте права доступа к `site_settings/theme`.
+                    <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
+                </AlertDescription>
+            </Alert>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Внешний вид</CardTitle>
+                <CardDescription>
+                    Настройте цветовую схему сайта. Укажите цвета в формате HSL без `hsl()` (например, `262 80% 50%`).
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="primary"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Основной цвет (Primary)</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} disabled={isSubmitting} placeholder="262 80% 60%" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="background"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Цвет фона (Background)</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} disabled={isSubmitting} placeholder="240 5% 8%" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="accent"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Акцентный цвет (Accent)</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} disabled={isSubmitting} placeholder="190 95% 55%" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Сохранить
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function AdminPage() {
     const { user, loading } = useUser();
@@ -425,19 +572,23 @@ export default function AdminPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Панель администратора</h1>
-        <p className="text-muted-foreground">Управление контентом проекта.</p>
+        <p className="text-muted-foreground">Управление контентом и внешним видом проекта.</p>
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
             <TabsTrigger value="management">Управление</TabsTrigger>
+            <TabsTrigger value="appearance">Внешний вид</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
         </TabsContent>
         <TabsContent value="management" className="mt-6">
             <PublicVideosList />
+        </TabsContent>
+        <TabsContent value="appearance" className="mt-6">
+            <AppearanceSettings />
         </TabsContent>
       </Tabs>
     </div>

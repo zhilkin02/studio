@@ -20,6 +20,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin(); // write includes create, update, delete
     }
+    
+    // --- Global Site Settings ---
+    // Anyone can read the site settings (like the theme).
+    // Only admins can change them.
+    match /site_settings/{settingId} {
+        allow read: if true;
+        allow write: if isAdmin();
+    }
 
     // --- User-Specific Content ---
     // A user can read and write to their own user profile. No one else can.

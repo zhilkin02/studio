@@ -3,12 +3,46 @@ import './globals.css';
 import {Header} from '@/components/header';
 import {Footer} from '@/components/footer';
 import { Toaster } from "@/components/ui/toaster"
-import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseClientProvider, initializeFirebase } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Suspense } from 'react';
+
 
 export const metadata: Metadata = {
   title: 'КоНК - Коротко О Не Коротком',
   description: 'Поиск фрагментов из фильмов и сериалов',
 };
+
+async function ThemeLoader() {
+  // We initialize a temporary instance here on the server to fetch the theme.
+  // This doesn't affect the client-side singleton initialization.
+  const { firestore } = initializeFirebase();
+  const themeDocRef = doc(firestore, 'site_settings', 'theme');
+  
+  try {
+    const themeDoc = await getDoc(themeDocRef);
+    if (themeDoc.exists()) {
+      const theme = themeDoc.data();
+      const style = `
+        :root {
+          ${theme.background ? `--background: ${theme.background};` : ''}
+          ${theme.primary ? `--primary: ${theme.primary};` : ''}
+          ${theme.accent ? `--accent: ${theme.accent};` : ''}
+        }
+        .dark {
+           ${theme.background ? `--background: ${theme.background};` : ''}
+           ${theme.primary ? `--primary: ${theme.primary};` : ''}
+           ${theme.accent ? `--accent: ${theme.accent};` : ''}
+        }
+      `;
+      return <style>{style}</style>;
+    }
+  } catch (error) {
+    console.error("Failed to load theme from Firestore:", error);
+  }
+  
+  return null;
+}
 
 export default function RootLayout({
   children,
@@ -24,6 +58,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
+        <Suspense fallback={null}>
+          <ThemeLoader />
+        </Suspense>
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>

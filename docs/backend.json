@@ -89,6 +89,26 @@
       "type": "object",
       "description": "An empty document whose existence indicates admin privileges.",
       "properties": {}
+    },
+    "ThemeSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Theme Settings",
+      "type": "object",
+      "description": "Stores site-wide appearance settings.",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Primary color in HSL format (e.g., '262 80% 50%')."
+        },
+        "background": {
+          "type": "string",
+          "description": "Background color in HSL format (e.g., '240 5% 8%')."
+        },
+        "accent": {
+          "type": "string",
+          "description": "Accent color in HSL format (e.g., '190 95% 55%')."
+        }
+      }
     }
   },
   "auth": {
@@ -177,8 +197,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/site_settings/{settingId}",
+        "definition": {
+          "entityName": "ThemeSettings",
+          "schema": {
+            "$ref": "#/backend/entities/ThemeSettings"
+          },
+          "description": "Stores global site settings. For now, it only contains a single document with id 'theme'. Accessible for read by anyone, and for write only by admins.",
+          "params": [
+            {
+              "name": "settingId",
+              "description": "The unique identifier of the setting document, e.g., 'theme'."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Konk Media Archive application, focusing on authorization independence and clear access control. Key considerations are admin role management and video fragment approval workflows.\n\n**Authorization Independence:**\n\n*   Admin role: The presence of a document in the `/roles_admin/{uid}` collection grants admin privileges. This eliminates the need to read user documents to determine admin status. This also enables atomic admin role assignment.\n*   Video fragment ownership: The `uploaderId` field within the `/videoFragments/{videoId}` documents denormalizes the user ID. Security rules can then use `request.auth.uid` and `resource.data.uploaderId` to enforce ownership without additional `get()` calls.\n\n**QAPs (Rules Are Not Filters):**\n\n*   Segregation for video fragment status: Approved videos are stored in `/videoFragments`, while pending videos are stored in `/pendingVideoFragments`. This segregation allows listing approved videos without filtering for status. Admins can manage pending videos in `/pendingVideoFragments`.\n*   Public Data: A dedicated `/publicVideoFragments` collection is used to serve content to all users, including unauthenticated ones. This separates public data from internal or protected data, simplifying security rules.\n\n*   Admin Role Management: Authorization for admin actions (like approving videos) relies on the existence of a document in `/roles_admin/{uid}`. This makes admin authorization explicit and efficient.\n\nThis structure avoids hierarchical dependencies, enables atomic operations, and clarifies authorization intent for improved security and debuggability."
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Konk Media Archive application, focusing on authorization independence and clear access control. Key considerations are admin role management and video fragment approval workflows.\n\n**Authorization Independence:**\n\n*   Admin role: The presence of a document in the `/roles_admin/{uid}` collection grants admin privileges. This eliminates the need to read user documents to determine admin status. This also enables atomic admin role assignment.\n*   Video fragment ownership: The `uploaderId` field within the `/videoFragments/{videoId}` documents denormalizes the user ID. Security rules can then use `request.auth.uid` and `resource.data.uploaderId` to enforce ownership without additional `get()` calls.\n\n**QAPs (Rules Are Not Filters):**\n\n*   Segregation for video fragment status: Approved videos are stored in `/videoFragments`, while pending videos are stored in `/pendingVideoFragments`. This segregation allows listing approved videos without filtering for status. Admins can manage pending videos in `/pendingVideoFragments`.\n*   Public Data: A dedicated `/publicVideoFragments` collection is used to serve content to all users, including unauthenticated ones. This separates public data from internal or protected data, simplifying security rules.\n\n*   Admin Role Management: Authorization for admin actions (like approving videos) relies on the existence of a document in `/roles_admin/{uid}`. This makes admin authorization explicit and efficient.\n*  Site-wide Settings: A `/site_settings` collection with a single document for the theme allows global appearance settings to be managed by admins and read by all users, without granting write access to non-admins."
   }
 }
