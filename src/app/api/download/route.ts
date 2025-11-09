@@ -30,15 +30,10 @@ export async function GET(request: NextRequest) {
         
         // Try to find the highest quality with both video and audio
         let format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'videoandaudio' });
-
-        // If no combined format is found, fallback to the highest quality video-only stream.
-        if (!format) {
-             format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
-        }
         
         // If no suitable format is found at all, return an error.
         if (!format) {
-            return new NextResponse('Could not find a suitable video format to download.', { status: 500 });
+            return new NextResponse('Could not find a suitable video format with audio to download.', { status: 500 });
         }
 
         // Get the readable stream from ytdl
