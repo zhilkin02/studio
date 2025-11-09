@@ -14,24 +14,26 @@ import { Readable } from 'stream';
 
 // ##################################################################################
 // ВАЖНО: Вы должны настроить эти значения в вашей среде.
-// 1. Перейдите в Google Cloud Console, в проекте 'konk-media-archive', включите "YouTube Data API v3". (Уже сделано)
-// 2. Создайте учетные данные OAuth 2.0.
-//    - Перейдите в "Credentials" -> "Create Credentials" -> "OAuth client ID".
-//    - Выберите "Desktop app" в качестве типа приложения.
-//    - После создания вы получите CLIENT_ID и CLIENT_SECRET.
-// 3. Получите REFRESH_TOKEN для вашего канала. Это **одноразовая настройка**.
-//    - Это самый сложный шаг. Вам нужно запустить скрипт, который попросит вас войти в свой аккаунт Google
-//      и дать разрешение приложению на управление вашим YouTube-каналом.
-//    - Простой способ сделать это - использовать `google-auth-cli` или написать небольшой Node.js скрипт.
-//      (Инструкции можно найти в документации Google API).
-// 4. Сохраните эти три значения в переменных окружения (например, в файле .env.local).
-//    - YOUTUBE_CLIENT_ID=ВАШ_КЛИЕНТ_ID
-//    - YOUTUBE_CLIENT_SECRET=ВАШ_КЛИЕНТ_SECRET
-//    - YOUTUBE_REFRESH_TOKEN=ВАШ_REFRESH_TOKEN
+//
+// 1. CLIENT_ID и CLIENT_SECRET: Вы уже получили их и я их вставил ниже.
+//
+// 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
+//    Это **одноразовая настройка**.
+//    - Простой способ сделать это - использовать "OAuth 2.0 Playground" от Google:
+//        1. Перейдите на https://developers.google.com/oauthplayground
+//        2. В правом верхнем углу нажмите на шестеренку (Настройки) -> "Use your own OAuth credentials".
+//           - Вставьте ваш Client ID и Client Secret.
+//        3. Слева, в шаге 1 "Select & authorize APIs", найдите "YouTube Data API v3" и выберите
+//           `https://www.googleapis.com/auth/youtube.upload`.
+//        4. Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
+//        5. В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
+//           - Вы увидите "Refresh token". Скопируйте его и вставьте ниже.
+//
+// 3. Сохраните REFRESH_TOKEN ниже.
 // ##################################################################################
-const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || 'YOUR_CLIENT_ID';
-const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || 'YOUR_CLIENT_SECRET';
-const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN || 'YOUR_REFRESH_TOKEN';
+const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '715036389581-lajmllm6hst2m78c9o3hv5vn092ue6af.apps.googleusercontent.com';
+const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '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';
+const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN || 'YOUR_REFRESH_TOKEN'; // <-- ВСТАВЬТЕ ВАШ REFRESH TOKEN СЮДА
 
 
 const oauth2Client = new google.auth.OAuth2(
@@ -74,7 +76,7 @@ const uploadVideoFlow = ai.defineFlow(
   async (input) => {
     
     // Проверка, что учетные данные YouTube были настроены.
-    if (CLIENT_ID === 'YOUR_CLIENT_ID' || CLIENT_SECRET === 'YOUR_CLIENT_SECRET' || REFRESH_TOKEN === 'YOUR_REFRESH_TOKEN') {
+    if (CLIENT_ID.startsWith('YOUR_') || CLIENT_SECRET.startsWith('YOUR_') || REFRESH_TOKEN.startsWith('YOUR_')) {
         const errorMessage = 'YouTube API не настроен на сервере. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts для настройки учетных данных.';
         console.error(errorMessage);
         return { error: errorMessage };
