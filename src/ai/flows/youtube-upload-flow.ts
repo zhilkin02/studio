@@ -41,8 +41,8 @@ const uploadVideoFlow = ai.defineFlow(
         const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
         const apiKey = process.env.YOUTUBE_API_KEY;
         
-        if (!clientId || !clientSecret || !refreshToken || !apiKey || clientId === "ВАШ_КЛИЕНТ_ID") {
-             return { error: 'Отсутствуют или не заменены учетные данные YouTube в файле .env.local' };
+        if (!clientId || !clientSecret || !refreshToken || !apiKey) {
+             return { error: 'Отсутствуют учетные данные YouTube в файле .env.local' };
         }
 
         try {
