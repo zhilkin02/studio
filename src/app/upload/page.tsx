@@ -1,7 +1,7 @@
 'use client';
 import { useUser } from '@/firebase/auth/use-user';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, UploadCloud, AlertCircle } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
 
@@ -23,7 +23,7 @@ const formSchema = z.object({
 });
 
 export default function UploadPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -39,12 +39,6 @@ export default function UploadPage() {
       description: '',
     },
   });
-
-  useEffect(() => {
-    if (!userLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, userLoading, router]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -62,8 +56,8 @@ export default function UploadPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !firestore) {
-      toast({ variant: "destructive", title: "Ошибка", description: "Вы не авторизованы или база данных недоступна." });
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Ошибка", description: "База данных недоступна." });
       return;
     }
     if (!videoFile) {
@@ -102,7 +96,7 @@ export default function UploadPage() {
                 title: values.title,
                 description: values.description,
                 filePath: youtubeUrl,
-                uploaderId: user.uid,
+                uploaderId: user?.uid ?? 'anonymous', // Use user ID or 'anonymous'
                 status: 'pending',
                 uploadDate: serverTimestamp(),
             };
@@ -121,7 +115,7 @@ export default function UploadPage() {
             // Reset state and navigate
             form.reset();
             setVideoFile(null);
-            router.push('/profile');
+            router.push('/');
         };
         reader.onerror = (error) => {
             throw new Error('Не удалось прочитать файл: ' + error);
@@ -141,20 +135,13 @@ export default function UploadPage() {
     }
   }
 
-  if (userLoading || !user) {
-    return <div className="flex justify-center items-center min-h-[calc(100vh-12rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
-        <p className="ml-4 text-muted-foreground">Проверка авторизации...</p>
-    </div>;
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle>Добавить новое видео</CardTitle>
           <CardDescription>
-            Выберите видеофайл и заполните форму. Видео будет загружено на ваш YouTube-канал как "невидимое" и отправлено на модерацию в приложении.
+            Выберите видеофайл и заполните форму. Видео будет загружено на YouTube-канал проекта как "невидимое" и отправлено на модерацию.
           </CardDescription>
         </CardHeader>
         <CardContent>
