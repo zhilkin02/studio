@@ -28,11 +28,17 @@ async function ThemeLoader() {
           ${theme.background ? `--background: ${theme.background};` : ''}
           ${theme.primary ? `--primary: ${theme.primary};` : ''}
           ${theme.accent ? `--accent: ${theme.accent};` : ''}
+          ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
+          ${theme.mainImageUrl ? `--main-image-url: url(${theme.mainImageUrl});` : ''}
+          ${theme.footerImageUrl ? `--footer-image-url: url(${theme.footerImageUrl});` : ''}
         }
         .dark {
            ${theme.background ? `--background: ${theme.background};` : ''}
            ${theme.primary ? `--primary: ${theme.primary};` : ''}
            ${theme.accent ? `--accent: ${theme.accent};` : ''}
+           ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
+           ${theme.mainImageUrl ? `--main-image-url: url(${theme.mainImageUrl});` : ''}
+           ${theme.footerImageUrl ? `--footer-image-url: url(${theme.footerImageUrl});` : ''}
         }
       `;
       return <style>{style}</style>;

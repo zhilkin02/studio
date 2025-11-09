@@ -9,20 +9,52 @@ import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateD
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Palette } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Palette, UploadCloud, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Separator } from '@/components/ui/separator';
+
+function hexToHsl(hex: string): string | null {
+    if (!hex) return null;
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return null;
+
+    let r = parseInt(result[1], 16) / 255;
+    let g = parseInt(result[2], 16) / 255;
+    let b = parseInt(result[3], 16) / 255;
+
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    
+    h = Math.round(h * 360);
+    s = Math.round(s * 100);
+    l = Math.round(l * 100);
+    
+    return `${h} ${s}% ${l}%`;
+}
 
 
 // Helper to extract YouTube video ID from URL
@@ -432,9 +464,12 @@ function PendingVideosList() {
 }
 
 const appearanceFormSchema = z.object({
-  primary: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 262 80% 50%'),
-  background: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 240 5% 8%'),
-  accent: z.string().regex(/^(\d{1,3})\s(\d{1,3})%\s(\d{1,3})%$/, 'Неверный формат HSL. Пример: 190 95% 55%'),
+  primary: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
+  background: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
+  accent: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
+  headerImageUrl: z.string().url().optional().or(z.literal('')),
+  mainImageUrl: z.string().url().optional().or(z.literal('')),
+  footerImageUrl: z.string().url().optional().or(z.literal('')),
 });
 
 
@@ -442,6 +477,7 @@ function AppearanceSettings() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [imageUploading, setImageUploading] = useState<string | null>(null);
     
     const themeDocRef = useMemo(() => {
         if (!firestore) return null;
@@ -453,27 +489,57 @@ function AppearanceSettings() {
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
         values: {
-            primary: themeSettings?.primary || '',
-            background: themeSettings?.background || '',
-            accent: themeSettings?.accent || '',
+            primary: themeSettings?.primary || '#8b5cf6',
+            background: themeSettings?.background || '#111827',
+            accent: themeSettings?.accent || '#34d399',
+            headerImageUrl: themeSettings?.headerImageUrl || '',
+            mainImageUrl: themeSettings?.mainImageUrl || '',
+            footerImageUrl: themeSettings?.footerImageUrl || '',
         },
     });
 
     useEffect(() => {
         if (themeSettings) {
             form.reset({
-                primary: themeSettings.primary || '',
-                background: themeSettings.background || '',
-                accent: themeSettings.accent || '',
+                primary: themeSettings.primary || '#8b5cf6',
+                background: themeSettings.background || '#111827',
+                accent: themeSettings.accent || '#34d399',
+                headerImageUrl: themeSettings.headerImageUrl || '',
+                mainImageUrl: themeSettings.mainImageUrl || '',
+                footerImageUrl: themeSettings.footerImageUrl || '',
             });
         }
     }, [themeSettings, form]);
+
+    const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
+        const storage = getStorage();
+        setImageUploading(fieldName);
+        const imageRef = storageRef(storage, `theme/${fieldName}_${Date.now()}_${file.name}`);
+        
+        try {
+            const snapshot = await uploadBytes(imageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            form.setValue(fieldName, downloadURL, { shouldValidate: true });
+            toast({ title: 'Изображение загружено', description: 'URL был добавлен в форму.' });
+        } catch (e: any) {
+             toast({ variant: 'destructive', title: 'Ошибка загрузки изображения', description: e.message });
+        } finally {
+            setImageUploading(null);
+        }
+    }
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
         if (!themeDocRef) return;
         setIsSubmitting(true);
         
-        setDoc(themeDocRef, values, { merge: true })
+        const themeData = {
+            ...values,
+            primary: hexToHsl(values.primary),
+            background: hexToHsl(values.background),
+            accent: hexToHsl(values.accent),
+        }
+        
+        setDoc(themeDocRef, themeData, { merge: true })
             .then(() => {
                  toast({
                     title: "Настройки сохранены",
@@ -501,11 +567,19 @@ function AppearanceSettings() {
     if (loading) {
         return (
             <Card>
-                <CardHeader><CardTitle>Внешний вид</CardTitle><CardDescription>Настройте цветовую схему сайта.</CardDescription></CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
+                <CardHeader><CardTitle>Внешний вид</CardTitle><CardDescription>Настройте цветовую схему и фоновые изображения сайта.</CardDescription></CardHeader>
+                <CardContent className="space-y-8">
+                     <div className="space-y-4">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                    <Separator />
+                     <div className="space-y-4">
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
                     <Skeleton className="h-10 w-32" />
                 </CardContent>
             </Card>
@@ -525,59 +599,139 @@ function AppearanceSettings() {
         )
     }
 
+    const ImageUploader = ({ fieldName, label }: { fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl', label: string }) => {
+        const currentUrl = form.watch(fieldName);
+        return (
+             <FormItem>
+                <FormLabel>{label}</FormLabel>
+                <FormControl>
+                    <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors flex flex-col items-center justify-center min-h-[120px]">
+                       {currentUrl ? (
+                         <>
+                            <img src={currentUrl} alt={label} className="max-h-24 rounded-md mb-2 object-cover"/>
+                            <p className="text-xs text-muted-foreground truncate max-w-full">{currentUrl}</p>
+                             <Button variant="link" size="sm" className="mt-1 text-red-500" onClick={() => form.setValue(fieldName, '')}>Удалить</Button>
+                         </>
+                       ) : (
+                         <>
+                           <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground"/>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                {imageUploading === fieldName ? 'Загрузка...' : 'Нажмите, чтобы выбрать файл'}
+                            </p>
+                         </>
+                       )}
+                      <Input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], fieldName)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isSubmitting || !!imageUploading}
+                      />
+                    </div>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Внешний вид</CardTitle>
                 <CardDescription>
-                    Настройте цветовую схему сайта. Укажите цвета в формате HSL без `hsl()` (например, `262 80% 50%`).
+                    Настройте цветовую схему и фоновые изображения для сайта.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <FormField
-                            control={form.control}
-                            name="primary"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Основной цвет (Primary)</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} disabled={isSubmitting} placeholder="262 80% 60%" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="background"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Цвет фона (Background)</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} disabled={isSubmitting} placeholder="240 5% 8%" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="accent"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Акцентный цвет (Accent)</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} disabled={isSubmitting} placeholder="190 95% 55%" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={isSubmitting}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <div>
+                             <h3 className="text-lg font-medium mb-4">Цветовая схема</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <FormField
+                                    control={form.control}
+                                    name="primary"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Основной</FormLabel>
+                                            <FormControl>
+                                                 <div className="relative">
+                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
+                                                    <Controller
+                                                        name="primary"
+                                                        control={form.control}
+                                                        render={({ field: { onChange, value } }) => (
+                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="background"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Фон</FormLabel>
+                                            <FormControl>
+                                                 <div className="relative">
+                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
+                                                    <Controller
+                                                        name="background"
+                                                        control={form.control}
+                                                        render={({ field: { onChange, value } }) => (
+                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="accent"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Акцент</FormLabel>
+                                            <FormControl>
+                                                 <div className="relative">
+                                                    <Input {...field} disabled={isSubmitting} className="pr-12" />
+                                                    <Controller
+                                                        name="accent"
+                                                        control={form.control}
+                                                        render={({ field: { onChange, value } }) => (
+                                                            <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             </div>
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                             <h3 className="text-lg font-medium mb-4">Фоновые изображения</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <ImageUploader fieldName="headerImageUrl" label="Изображение шапки"/>
+                                <ImageUploader fieldName="mainImageUrl" label="Изображение контента"/>
+                                <ImageUploader fieldName="footerImageUrl" label="Изображение подвала"/>
+                              </div>
+                        </div>
+
+
+                        <Button type="submit" disabled={isSubmitting || !!imageUploading}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Сохранить
+                            {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить'}
                         </Button>
                     </form>
                 </Form>

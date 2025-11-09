@@ -84,7 +84,7 @@
       ]
     },
     "AdminRole": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$schema": "http://json-schema.org/draft-07  /schema#",
       "title": "Admin Role",
       "type": "object",
       "description": "An empty document whose existence indicates admin privileges.",
@@ -98,15 +98,27 @@
       "properties": {
         "primary": {
           "type": "string",
-          "description": "Primary color in HSL format (e.g., '262 80% 50%')."
+          "description": "Primary color in HEX format (e.g., '#330066')."
         },
         "background": {
           "type": "string",
-          "description": "Background color in HSL format (e.g., '240 5% 8%')."
+          "description": "Background color in HEX format (e.g., '#0F0F14')."
         },
         "accent": {
           "type": "string",
-          "description": "Accent color in HSL format (e.g., '190 95% 55%')."
+          "description": "Accent color in HEX format (e.g., '#4DD0E1')."
+        },
+        "headerImageUrl": {
+            "type": "string",
+            "description": "URL for the header background image."
+        },
+        "mainImageUrl": {
+            "type": "string",
+            "description": "URL for the main content background image."
+        },
+        "footerImageUrl": {
+            "type": "string",
+            "description": "URL for the footer background image."
         }
       }
     }

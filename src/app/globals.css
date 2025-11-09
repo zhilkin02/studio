@@ -4,6 +4,22 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background-image: var(--main-image-url);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+header {
+    background-image: var(--header-image-url);
+    background-size: cover;
+    background-position: center;
+}
+
+footer {
+    background-image: var(--footer-image-url);
+    background-size: cover;
+    background-position: center;
 }
 
 @layer base {
