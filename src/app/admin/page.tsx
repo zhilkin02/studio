@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useFirebaseApp } from '@/firebase';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2, Trash2, Pencil, UploadCloud } from 'lucide-react';
@@ -494,6 +494,7 @@ const appearanceFormSchema = z.object({
 
 function AppearanceSettings() {
     const firestore = useFirestore();
+    const app = useFirebaseApp();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imageUploading, setImageUploading] = useState<string | null>(null);
@@ -531,7 +532,7 @@ function AppearanceSettings() {
                 cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
                 popoverHex: themeSettings.popoverHex || '#111827',
                 popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
-                headerImageUrl: themeSettings.headerImageUrl || '',
+                headerImageUrl: themeSettings.headerImageUrl || 'https://firebasestorage.googleapis.com/v0/b/konk-media-archive.appspot.com/o/theme%2Fheader.png?alt=media&token=19148332-945b-4395-9430-845189304383',
                 mainImageUrl: themeSettings.mainImageUrl || '',
                 footerImageUrl: themeSettings.footerImageUrl || '',
             });
@@ -564,7 +565,8 @@ function AppearanceSettings() {
 
 
     const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
-        const storage = getStorage();
+        if (!app) return;
+        const storage = getStorage(app);
         setImageUploading(fieldName);
         const imageRef = storageRef(storage, `theme/${fieldName}_${Date.now()}_${file.name}`);
         
@@ -931,5 +933,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    

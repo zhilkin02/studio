@@ -21,35 +21,37 @@ async function ThemeLoader() {
   
   try {
     const themeDoc = await getDoc(themeDocRef);
-    if (themeDoc.exists()) {
-      const theme = themeDoc.data();
-      // Build the style string with all theme properties
-      const style = `
-        :root, .dark {
-          ${theme.background ? `--background: ${theme.background};` : ''}
-          ${theme.foreground ? `--foreground: ${theme.foreground};` : ''}
-          ${theme.card ? `--card: ${theme.card};` : ''}
-          ${theme.cardForeground ? `--card-foreground: ${theme.cardForeground};` : ''}
-          ${theme.popover ? `--popover: ${theme.popover};` : ''}
-          ${theme.popoverForeground ? `--popover-foreground: ${theme.popoverForeground};` : ''}
-          ${theme.primary ? `--primary: ${theme.primary};` : ''}
-          ${theme.primaryForeground ? `--primary-foreground: ${theme.primaryForeground};` : ''}
-          ${theme.secondary ? `--secondary: ${theme.secondary};` : ''}
-          ${theme.secondaryForeground ? `--secondary-foreground: ${theme.secondaryForeground};` : ''}
-          ${theme.muted ? `--muted: ${theme.muted};` : ''}
-          ${theme.mutedForeground ? `--muted-foreground: ${theme.mutedForeground};` : ''}
-          ${theme.accent ? `--accent: ${theme.accent};` : ''}
-          ${theme.accentForeground ? `--accent-foreground: ${theme.accentForeground};` : ''}
-          ${theme.border ? `--border: ${theme.border};` : ''}
-          ${theme.input ? `--input: ${theme.input};` : ''}
-          ${theme.ring ? `--ring: ${theme.ring};` : ''}
-          ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
-          ${theme.mainImageUrl ? `--main-image-url: url(${theme.mainImageUrl});` : ''}
-          ${theme.footerImageUrl ? `--footer-image-url: url(${theme.footerImageUrl});` : ''}
-        }
-      `;
-      return <style>{style}</style>;
-    }
+    const theme = themeDoc.exists() ? themeDoc.data() : {};
+    
+    // Set default values directly in the style block if they don't exist in theme
+    const style = `
+      :root, .dark {
+        --background: ${theme.background || '240 5% 8%'};
+        --foreground: ${theme.foreground || '0 0% 98%'};
+        --card: ${theme.card || '240 5% 12%'};
+        --card-foreground: ${theme.cardForeground || '0 0% 98%'};
+        --popover: ${theme.popover || '240 5% 8%'};
+        --popover-foreground: ${theme.popoverForeground || '0 0% 98%'};
+        --primary: ${theme.primary || '262 80% 60%'};
+        --primary-foreground: ${theme.primaryForeground || '0 0% 98%'};
+        --secondary: ${theme.secondary || '240 5% 15%'};
+        --secondary-foreground: ${theme.secondaryForeground || '0 0% 98%'};
+        --muted: ${theme.muted || '240 5% 15%'};
+        --muted-foreground: ${theme.mutedForeground || '0 0% 63.9%'};
+        --accent: ${theme.accent || '190 95% 55%'};
+        --accent-foreground: ${theme.accentForeground || '240 5% 8%'};
+        --destructive: ${theme.destructive || '0 62.8% 30.6%'};
+        --destructive-foreground: ${theme.destructiveForeground || '0 0% 98%'};
+        --border: ${theme.border || '240 5% 20%'};
+        --input: ${theme.input || '240 5% 20%'};
+        --ring: ${theme.ring || '262 80% 60%'};
+        --header-image-url: ${theme.headerImageUrl ? `url(${theme.headerImageUrl})` : 'url(https://firebasestorage.googleapis.com/v0/b/konk-media-archive.appspot.com/o/theme%2Fheader.png?alt=media&token=19148332-945b-4395-9430-845189304383)'};
+        --main-image-url: ${theme.mainImageUrl ? `url(${theme.mainImageUrl})` : 'none'};
+        --footer-image-url: ${theme.footerImageUrl ? `url(${theme.footerImageUrl})` : 'none'};
+      }
+    `;
+    return <style>{style}</style>;
+
   } catch (error) {
     console.error("Failed to load theme from Firestore:", error);
   }
