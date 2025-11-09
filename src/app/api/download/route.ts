@@ -28,10 +28,15 @@ export async function GET(request: NextRequest) {
         // Sanitize the title to create a valid filename
         const title = info.videoDetails.title.replace(/[<>:"/\\|?*]+/g, '_');
         
-        // Find a format that has both video and audio
-        let format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'videoandaudio' });
+        // Try to get a common 720p format first for stability. '136' is often 720p mp4.
+        let format = ytdl.chooseFormat(info.formats, { quality: '136', filter: 'videoandaudio' });
 
-        // If no combined format is found, fallback to highest quality video-only
+        // If the preferred format is not found, try to find the highest quality with video and audio
+        if (!format) {
+             format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'videoandaudio' });
+        }
+        
+        // If still no combined format is found, fallback to highest quality video-only
         if (!format) {
              format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
              if(!format) {
@@ -48,10 +53,6 @@ export async function GET(request: NextRequest) {
         const headers = new Headers();
         headers.set('Content-Type', format.mimeType || 'video/mp4');
         headers.set('Content-Disposition', `attachment; filename="${title}.mp4"`);
-        // The content length can vary, so it's better not to set it for streams
-        // if (format.contentLength) {
-        //     headers.set('Content-Length', format.contentLength);
-        // }
 
         // Use NextResponse to stream the response
         return new NextResponse(readableStream, { headers });
