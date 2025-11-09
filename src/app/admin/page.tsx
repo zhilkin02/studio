@@ -137,7 +137,7 @@ function PublicVideosList() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [mutatingId, setMutatingId] = useState<string | null>(null);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingVideo, setEditingVideo] = useState<Video | null>(null);
 
 
     const publicQuery = useMemo(() => {
@@ -212,41 +212,46 @@ function PublicVideosList() {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(videos as Video[]).map((video) => {
-                const videoId = getYouTubeId(video.filePath);
-                const isMutating = mutatingId === video.id;
-                return (
-                    <Card key={video.id}>
-                        <CardHeader>
-                            <CardTitle className="truncate">{video.title}</CardTitle>
-                            <CardDescription className="line-clamp-3">{video.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video"></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
-                        </CardContent>
-                        <CardFooter className="flex justify-end gap-2">
-                             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" disabled={isMutating}><Pencil className="mr-2 h-4 w-4" />Редактировать</Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                        <DialogTitle>Редактировать видео</DialogTitle>
-                                        <DialogDescription>Внесите изменения в название или описание видео.</DialogDescription>
-                                    </DialogHeader>
-                                    <EditVideoForm video={video} onFinish={() => setIsEditDialogOpen(false)} />
-                                </DialogContent>
-                            </Dialog>
-                            <Button variant="destructive" onClick={() => handleDelete(video)} disabled={isMutating}>
-                                {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                Удалить
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                )
-            })}
-        </div>
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(videos as Video[]).map((video) => {
+                    const videoId = getYouTubeId(video.filePath);
+                    const isMutating = mutatingId === video.id;
+                    return (
+                        <Card key={video.id}>
+                            <CardHeader>
+                                <CardTitle className="truncate">{video.title}</CardTitle>
+                                <CardDescription className="line-clamp-3">{video.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video"></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
+                            </CardContent>
+                            <CardFooter className="flex justify-end gap-2">
+                                <Button variant="outline" disabled={isMutating} onClick={() => setEditingVideo(video)}>
+                                    <Pencil className="mr-2 h-4 w-4" />Редактировать
+                                </Button>
+                                <Button variant="destructive" onClick={() => handleDelete(video)} disabled={isMutating}>
+                                    {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    Удалить
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
+            </div>
+
+            {editingVideo && (
+                 <Dialog open={!!editingVideo} onOpenChange={(isOpen) => !isOpen && setEditingVideo(null)}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Редактировать видео</DialogTitle>
+                            <DialogDescription>Внесите изменения в название или описание видео.</DialogDescription>
+                        </DialogHeader>
+                        <EditVideoForm video={editingVideo} onFinish={() => setEditingVideo(null)} />
+                    </DialogContent>
+                </Dialog>
+            )}
+        </>
     );
 }
 
