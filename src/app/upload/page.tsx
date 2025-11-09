@@ -90,14 +90,22 @@ export default function UploadPage() {
             const result = await uploadVideoToYouTube({
                 title: values.title,
                 description: values.description,
-                videoDataUri: videoDataUri
+                videoDataUri: videoDataUri,
+                clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID!,
+                clientSecret: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET!,
+                refreshToken: process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN!,
+                apiKey: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY!,
             });
             
             setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
             setUploadProgress(75);
 
             if (!result || !result.videoId) {
-                throw new Error(result.error || 'Не удалось получить ID видео от YouTube.');
+                let description = result.error || 'Не удалось получить ID видео от YouTube.';
+                if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
+                    description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+                }
+                 throw new Error(description);
             }
 
             const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
@@ -147,15 +155,10 @@ export default function UploadPage() {
               });
         } catch (e: any) {
             console.error("Error in upload process:", e);
-            let description = e.message || 'Произошла неизвестная ошибка.';
-            if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
-                description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
-            }
-            
             toast({
                 variant: "destructive",
                 title: "Ошибка загрузки",
-                description: description,
+                description: e.message || 'Произошла неизвестная ошибка.',
             });
             setUploadProgress(0);
             setUploadMessage('');

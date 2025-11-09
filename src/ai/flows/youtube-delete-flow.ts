@@ -11,6 +11,10 @@ import { z } from 'genkit';
 
 const YouTubeDeleteInputSchema = z.object({
     videoId: z.string().describe('The ID of the video to delete.'),
+    clientId: z.string().describe('The YouTube client ID.'),
+    clientSecret: z.string().describe('The YouTube client secret.'),
+    refreshToken: z.string().describe('The YouTube refresh token.'),
+    apiKey: z.string().describe('The YouTube API key.'),
 });
 export type YouTubeDeleteInput = z.infer<typeof YouTubeDeleteInputSchema>;
 
@@ -31,15 +35,10 @@ const deleteVideoFlow = ai.defineFlow(
         outputSchema: YouTubeDeleteOutputSchema,
     },
     async (input) => {
-        const { videoId } = input;
+        const { videoId, clientId, clientSecret, refreshToken, apiKey } = input;
 
-        const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
-        const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
-        const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN;
-        const API_KEY = process.env.YOUTUBE_API_KEY;
-
-        if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN || !API_KEY) {
-            return { success: false, error: 'Отсутствуют учетные данные YouTube в переменных окружения.' };
+        if (!clientId || !clientSecret || !refreshToken || !apiKey) {
+            return { success: false, error: 'Отсутствуют учетные данные YouTube.' };
         }
 
         try {
@@ -50,9 +49,9 @@ const deleteVideoFlow = ai.defineFlow(
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    client_id: CLIENT_ID,
-                    client_secret: CLIENT_SECRET,
-                    refresh_token: REFRESH_TOKEN,
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    refresh_token: refreshToken,
                     grant_type: 'refresh_token',
                 }),
             });
@@ -64,7 +63,7 @@ const deleteVideoFlow = ai.defineFlow(
             const accessToken = tokenData.access_token;
             
             // Step 2: Call the videos.delete endpoint
-            const deleteUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${API_KEY}`;
+            const deleteUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}`;
             
             const deleteResponse = await fetch(deleteUrl, {
                 method: 'DELETE',

@@ -14,6 +14,10 @@ const YouTubeUploadInputSchema = z.object({
     title: z.string().describe('The title of the video.'),
     description: z.string().describe('The description of the video.'),
     videoDataUri: z.string().describe("The video file as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+    clientId: z.string().describe('The YouTube client ID.'),
+    clientSecret: z.string().describe('The YouTube client secret.'),
+    refreshToken: z.string().describe('The YouTube refresh token.'),
+    apiKey: z.string().describe('The YouTube API key.'),
 });
 export type YouTubeUploadInput = z.infer<typeof YouTubeUploadInputSchema>;
 
@@ -34,15 +38,10 @@ const uploadVideoFlow = ai.defineFlow(
         outputSchema: YouTubeUploadOutputSchema,
     },
     async (input) => {
-        const { title, description, videoDataUri } = input;
+        const { title, description, videoDataUri, clientId, clientSecret, refreshToken, apiKey } = input;
 
-        const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
-        const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
-        const REFRESH_TOKEN = process.env.YOUTUBE_REFRESH_TOKEN;
-        const API_KEY = process.env.YOUTUBE_API_KEY;
-
-        if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN || !API_KEY) {
-            return { error: 'Отсутствуют учетные данные YouTube в переменных окружения.' };
+        if (!clientId || !clientSecret || !refreshToken || !apiKey) {
+            return { error: 'Отсутствуют учетные данные YouTube.' };
         }
 
         try {
@@ -53,9 +52,9 @@ const uploadVideoFlow = ai.defineFlow(
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    client_id: CLIENT_ID,
-                    client_secret: CLIENT_SECRET,
-                    refresh_token: REFRESH_TOKEN,
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    refresh_token: refreshToken,
                     grant_type: 'refresh_token',
                 }),
             });
@@ -79,7 +78,7 @@ const uploadVideoFlow = ai.defineFlow(
                 },
             };
             
-            const createSessionUrl = `https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&key=${API_KEY}&uploadType=resumable`;
+            const createSessionUrl = `https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&key=${apiKey}&uploadType=resumable`;
 
             const sessionResponse = await fetch(createSessionUrl, {
                 method: 'POST',

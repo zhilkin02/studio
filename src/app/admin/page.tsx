@@ -160,7 +160,13 @@ function PublicVideosList() {
 
         try {
             toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
-            const deleteResult = await deleteVideoFromYouTube({ videoId: videoId });
+            const deleteResult = await deleteVideoFromYouTube({ 
+                videoId: videoId,
+                clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID!,
+                clientSecret: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET!,
+                refreshToken: process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN!,
+                apiKey: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY!,
+             });
 
             if (!deleteResult.success) {
                 throw new Error(deleteResult.error || "Не удалось удалить видео с YouTube.");
@@ -318,7 +324,13 @@ function PendingVideosList() {
 
         try {
             toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
-            const deleteResult = await deleteVideoFromYouTube({ videoId: videoId });
+            const deleteResult = await deleteVideoFromYouTube({ 
+                videoId: videoId,
+                clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID!,
+                clientSecret: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET!,
+                refreshToken: process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN!,
+                apiKey: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY!,
+             });
 
             if (!deleteResult.success) {
                 throw new Error(deleteResult.error || "Не удалось удалить видео с YouTube.");
