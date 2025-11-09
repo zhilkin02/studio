@@ -59,64 +59,66 @@ function AuthButtons() {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-           <Avatar className="h-10 w-10">
-              <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-              <AvatarFallback>
-                <UserIcon />
-              </AvatarFallback>
-            </Avatar>
-             {user.isAdmin && pendingCount > 0 && (
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {pendingCount}
-                </Badge>
-            )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profile">
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>Профиль</span>
-          </Link>
-        </DropdownMenuItem>
-         <DropdownMenuItem asChild>
+    <div className="flex items-center gap-2">
+       <Button asChild>
           <Link href="/upload">
             <Upload className="mr-2 h-4 w-4" />
-            <span>Загрузить видео</span>
+            Загрузить видео
           </Link>
-        </DropdownMenuItem>
-        {user.isAdmin && (
-           <DropdownMenuItem asChild>
-             <Link href="/admin" className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>Панель администратора</span>
-                </div>
-                 {pendingCount > 0 && (
-                    <Badge variant="destructive" className="h-5">{pendingCount}</Badge>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+               <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+                  <AvatarFallback>
+                    <UserIcon />
+                  </AvatarFallback>
+                </Avatar>
+                 {user.isAdmin && pendingCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                        {pendingCount}
+                    </Badge>
                 )}
-             </Link>
-           </DropdownMenuItem>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Выйти</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Профиль</span>
+              </Link>
+            </DropdownMenuItem>
+            {user.isAdmin && (
+               <DropdownMenuItem asChild>
+                 <Link href="/admin" className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Панель администратора</span>
+                    </div>
+                     {pendingCount > 0 && (
+                        <Badge variant="destructive" className="h-5">{pendingCount}</Badge>
+                    )}
+                 </Link>
+               </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Выйти</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+    </div>
   );
 }
 
