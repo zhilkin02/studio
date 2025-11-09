@@ -13,11 +13,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, UploadCloud } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, Timer } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const formSchema = z.object({
@@ -25,6 +26,27 @@ const formSchema = z.object({
   description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
   keywords: z.string().optional(),
 });
+
+function getQuotaResetTime() {
+    const now = new Date();
+    // YouTube quota resets at midnight Pacific Time.
+    // We can approximate this by setting a UTC date for tomorrow at 8:00 (since 00:00 PST is 08:00 UTC).
+    // This handles Daylight Saving Time for PT automatically.
+    const resetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    resetTime.setUTCHours(8, 0, 0, 0);
+
+    if (now.getTime() > resetTime.getTime()) {
+      // If it's already past midnight PT today, the next reset is tomorrow.
+      resetTime.setUTCDate(resetTime.getUTCDate() + 1);
+    }
+
+    const diff = resetTime.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { hours, minutes };
+}
+
 
 export default function UploadPage() {
   const { user, loading } = useUser();
@@ -35,12 +57,24 @@ export default function UploadPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0); 
   const [uploadMessage, setUploadMessage] = useState('');
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [quotaReset, setQuotaReset] = useState({hours: 0, minutes: 0});
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+  
+  useEffect(() => {
+    if (quotaExceeded) {
+       setQuotaReset(getQuotaResetTime());
+       const interval = setInterval(() => {
+            setQuotaReset(getQuotaResetTime());
+       }, 60000); // Update every minute
+       return () => clearInterval(interval);
+    }
+  }, [quotaExceeded]);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -64,6 +98,7 @@ export default function UploadPage() {
         return;
       }
       setVideoFile(file);
+      setQuotaExceeded(false); // Reset quota error when a new file is selected
     }
   };
 
@@ -78,6 +113,7 @@ export default function UploadPage() {
     }
 
     setIsSubmitting(true);
+    setQuotaExceeded(false);
     
     const reader = new FileReader();
     reader.readAsDataURL(videoFile);
@@ -95,9 +131,16 @@ export default function UploadPage() {
                 videoDataUri: videoDataUri,
             });
             
+            if (result.quotaExceeded) {
+                setQuotaExceeded(true);
+                setUploadProgress(0);
+                setUploadMessage('');
+                setIsSubmitting(false);
+                return;
+            }
+
             if (!result || !result.videoId) {
-                let description = result.error || 'Не удалось получить ID видео от YouTube.';
-                 throw new Error(description);
+                 throw new Error(result.error || 'Не удалось получить ID видео от YouTube.');
             }
 
             setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
@@ -143,9 +186,7 @@ export default function UploadPage() {
         } catch (e: any) {
             console.error("Error in upload process:", e);
              let errorMessage = e.message || 'Произошла неизвестная ошибка.';
-            if (errorMessage.includes('uploadLimitExceeded') || errorMessage.includes('exceeded the number of videos')) {
-                errorMessage = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
-            } else if (errorMessage.includes('invalid_client')) {
+            if (errorMessage.includes('invalid_client')) {
                 errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные.";
             }
 
@@ -157,7 +198,7 @@ export default function UploadPage() {
             setUploadProgress(0);
             setUploadMessage('');
         } finally {
-            setIsSubmitting(false);
+            if(!quotaExceeded) setIsSubmitting(false);
         }
     };
 
@@ -216,6 +257,16 @@ export default function UploadPage() {
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
+
+                {quotaExceeded && (
+                    <Alert variant="destructive">
+                        <Timer className="h-4 w-4" />
+                        <AlertTitle>Достигнут лимит загрузок YouTube</AlertTitle>
+                        <AlertDescription>
+                            Квота сбрасывается в полночь по тихоокеанскому времени (PST). Вы сможете снова загружать видео примерно через <b>{quotaReset.hours} ч. {quotaReset.minutes} мин.</b>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
               <FormField
                 control={form.control}
@@ -283,7 +334,7 @@ export default function UploadPage() {
               )}
 
 
-              <Button type="submit" disabled={isSubmitting || !videoFile}>
+              <Button type="submit" disabled={isSubmitting || !videoFile || quotaExceeded}>
                 {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Загрузка...</> : 'Загрузить и отправить на модерацию'}
               </Button>
             </form>

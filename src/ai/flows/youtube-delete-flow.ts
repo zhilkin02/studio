@@ -78,7 +78,7 @@ const deleteVideoFlow = ai.defineFlow(
             } else {
                  const errorText = await deleteResponse.text();
                  let errorMessage = `Ошибка при удалении видео: ${deleteResponse.status} ${deleteResponse.statusText}. ${errorText}`;
-                 if (errorText.includes('uploadLimitExceeded') || errorText.includes('exceeded the number of videos')) {
+                 if (errorText.includes('quotaExceeded')) {
                     errorMessage = "Суточный лимит на действия с видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
                  }
                  if (errorText.includes('invalid_client')) {

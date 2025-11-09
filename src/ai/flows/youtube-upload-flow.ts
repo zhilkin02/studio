@@ -20,6 +20,7 @@ export type YouTubeUploadInput = z.infer<typeof YouTubeUploadInputSchema>;
 const YouTubeUploadOutputSchema = z.object({
     videoId: z.string().optional().describe('The ID of the uploaded video.'),
     error: z.string().optional().describe('An error message if the upload failed.'),
+    quotaExceeded: z.boolean().optional().describe('Indicates if the YouTube quota was exceeded.'),
 });
 export type YouTubeUploadOutput = z.infer<typeof YouTubeUploadOutputSchema>;
 
@@ -94,14 +95,13 @@ const uploadVideoFlow = ai.defineFlow(
             
             if (!sessionResponse.ok) {
                  const errorText = await sessionResponse.text();
-                 let errorMessage = `Ошибка создания сессии загрузки: ${sessionResponse.status} ${sessionResponse.statusText}. ${errorText}`;
                  if (errorText.includes('uploadLimitExceeded') || errorText.includes('exceeded the number of videos')) {
-                    errorMessage = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+                    return { error: "Суточный лимит загрузки видео на YouTube исчерпан.", quotaExceeded: true };
                  }
                  if (errorText.includes('invalid_client')) {
-                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local.";
+                    return { error: "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local." };
                  }
-                 return { error: errorMessage };
+                 return { error: `Ошибка создания сессии загрузки: ${sessionResponse.status} ${sessionResponse.statusText}. ${errorText}` };
             }
 
             const uploadUrl = sessionResponse.headers.get('Location');
