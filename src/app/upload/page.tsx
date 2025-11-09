@@ -16,6 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Loader2, UploadCloud } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
@@ -96,26 +99,44 @@ export default function UploadPage() {
                 title: values.title,
                 description: values.description,
                 filePath: youtubeUrl,
-                uploaderId: user?.uid ?? 'anonymous', // Use user ID or 'anonymous'
+                uploaderId: user?.uid ?? 'anonymous',
                 status: 'pending',
                 uploadDate: serverTimestamp(),
             };
 
-            await addDoc(pendingCollectionRef, docData);
-            
-            setUploadProgress(100);
-            setUploadMessage("Готово!");
+            addDoc(pendingCollectionRef, docData)
+              .then(() => {
+                setUploadProgress(100);
+                setUploadMessage("Готово!");
 
-            toast({
-                title: "Успешно отправлено!",
-                description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
-                action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
-            });
-            
-            // Reset state and navigate
-            form.reset();
-            setVideoFile(null);
-            router.push('/');
+                toast({
+                    title: "Успешно отправлено!",
+                    description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
+                    action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
+                });
+                
+                form.reset();
+                setVideoFile(null);
+                router.push('/');
+                setIsSubmitting(false);
+              })
+              .catch(serverError => {
+                const permissionError = new FirestorePermissionError({
+                    path: pendingCollectionRef.path,
+                    operation: 'create',
+                    requestResourceData: docData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    variant: "destructive",
+                    title: "Ошибка прав доступа",
+                    description: 'Не удалось сохранить данные. Проверьте консоль для деталей.',
+                });
+                setUploadProgress(0);
+                setUploadMessage('');
+                setIsSubmitting(false);
+              });
         };
         reader.onerror = (error) => {
             throw new Error('Не удалось прочитать файл: ' + error);
@@ -130,7 +151,6 @@ export default function UploadPage() {
         });
         setUploadProgress(0);
         setUploadMessage('');
-    } finally {
         setIsSubmitting(false);
     }
   }
