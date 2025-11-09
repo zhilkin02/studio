@@ -33,13 +33,13 @@ const deleteVideoFlow = ai.defineFlow(
     async (input) => {
         const { videoId } = input;
         
-        const clientId = process.env.YOUTUBE_CLIENT_ID || "YOUR_YOUTUBE_CLIENT_ID";
-        const clientSecret = process.env.YOUTUBE_CLIENT_SECRET || "YOUR_YOUTUBE_CLIENT_SECRET";
-        const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN || "YOUR_YOUTUBE_REFRESH_TOKEN";
-        const apiKey = process.env.YOUTUBE_API_KEY || "YOUR_YOUTUBE_API_KEY";
+        const clientId = process.env.YOUTUBE_CLIENT_ID;
+        const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+        const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+        const apiKey = process.env.YOUTUBE_API_KEY;
 
-        if (!clientId || !clientSecret || !refreshToken || !apiKey || clientId === "YOUR_YOUTUBE_CLIENT_ID") {
-            return { success: false, error: 'Отсутствуют или не заменены учетные данные YouTube.' };
+        if (!clientId || !clientSecret || !refreshToken || !apiKey || clientId === "ВАШ_КЛИЕНТ_ID") {
+            return { success: false, error: 'Отсутствуют или не заменены учетные данные YouTube в файле .env.local' };
         }
 
         try {
@@ -82,7 +82,7 @@ const deleteVideoFlow = ai.defineFlow(
                     errorMessage = "Суточный лимит на действия с видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
                  }
                  if (errorText.includes('invalid_client')) {
-                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные.";
+                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local.";
                  }
                  return { success: false, error: errorMessage };
             }
