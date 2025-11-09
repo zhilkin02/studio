@@ -14,10 +14,6 @@ const YouTubeUploadInputSchema = z.object({
     title: z.string().describe('The title of the video.'),
     description: z.string().describe('The description of the video.'),
     videoDataUri: z.string().describe("The video file as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
-    clientId: z.string().describe('The YouTube client ID.'),
-    clientSecret: z.string().describe('The YouTube client secret.'),
-    refreshToken: z.string().describe('The YouTube refresh token.'),
-    apiKey: z.string().describe('The YouTube API key.'),
 });
 export type YouTubeUploadInput = z.infer<typeof YouTubeUploadInputSchema>;
 
@@ -38,7 +34,11 @@ const uploadVideoFlow = ai.defineFlow(
         outputSchema: YouTubeUploadOutputSchema,
     },
     async (input) => {
-        const { title, description, videoDataUri, clientId, clientSecret, refreshToken, apiKey } = input;
+        const { title, description, videoDataUri } = input;
+        const clientId = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID;
+        const clientSecret = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET;
+        const refreshToken = process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN;
+        const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
 
         if (!clientId || !clientSecret || !refreshToken || !apiKey) {
             return { error: 'Отсутствуют учетные данные YouTube.' };

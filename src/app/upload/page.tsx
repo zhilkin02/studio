@@ -91,10 +91,6 @@ export default function UploadPage() {
                 title: values.title,
                 description: values.description,
                 videoDataUri: videoDataUri,
-                clientId: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID!,
-                clientSecret: process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET!,
-                refreshToken: process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN!,
-                apiKey: process.env.NEXT_PUBLIC_YOUTUBE_API_KEY!,
             });
             
             setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");

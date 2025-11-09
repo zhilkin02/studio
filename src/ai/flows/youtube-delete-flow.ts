@@ -11,10 +11,6 @@ import { z } from 'genkit';
 
 const YouTubeDeleteInputSchema = z.object({
     videoId: z.string().describe('The ID of the video to delete.'),
-    clientId: z.string().describe('The YouTube client ID.'),
-    clientSecret: z.string().describe('The YouTube client secret.'),
-    refreshToken: z.string().describe('The YouTube refresh token.'),
-    apiKey: z.string().describe('The YouTube API key.'),
 });
 export type YouTubeDeleteInput = z.infer<typeof YouTubeDeleteInputSchema>;
 
@@ -35,7 +31,11 @@ const deleteVideoFlow = ai.defineFlow(
         outputSchema: YouTubeDeleteOutputSchema,
     },
     async (input) => {
-        const { videoId, clientId, clientSecret, refreshToken, apiKey } = input;
+        const { videoId } = input;
+        const clientId = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID;
+        const clientSecret = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET;
+        const refreshToken = process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN;
+        const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
 
         if (!clientId || !clientSecret || !refreshToken || !apiKey) {
             return { success: false, error: 'Отсутствуют учетные данные YouTube.' };
