@@ -91,9 +91,9 @@ function AuthButtons() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/custom-page">
+           <Link href="/">
             <Code className="mr-2 h-4 w-4" />
-            <span>Кастомная страница</span>
+            <span>Главная</span>
           </Link>
         </DropdownMenuItem>
         {user.isAdmin && (
