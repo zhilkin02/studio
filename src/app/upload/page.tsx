@@ -77,10 +77,11 @@ export default function UploadPage() {
 
     setIsSubmitting(true);
     
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(videoFile);
-        reader.onload = async () => {
+    const reader = new FileReader();
+    reader.readAsDataURL(videoFile);
+
+    reader.onload = async () => {
+        try {
             const videoDataUri = reader.result as string;
             
             setUploadMessage("Отправка видео на сервер...");
@@ -144,25 +145,30 @@ export default function UploadPage() {
                 setUploadMessage('');
                 setIsSubmitting(false);
               });
-        };
-        reader.onerror = (error) => {
-            throw new Error('Не удалось прочитать файл: ' + error);
+        } catch (e: any) {
+            console.error("Error in upload process:", e);
+            let description = e.message || 'Произошла неизвестная ошибка.';
+            if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
+                description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+            }
+            
+            toast({
+                variant: "destructive",
+                title: "Ошибка загрузки",
+                description: description,
+            });
+            setUploadProgress(0);
+            setUploadMessage('');
+            setIsSubmitting(false);
         }
+    };
 
-    } catch (e: any) {
-        console.error("Error in upload process:", e);
-        let description = e.message || 'Произошла неизвестная ошибка.';
-        if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
-            description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
-        }
-        
+    reader.onerror = (error) => {
         toast({
             variant: "destructive",
-            title: "Ошибка загрузки",
-            description: description,
+            title: "Ошибка чтения файла",
+            description: 'Не удалось прочитать файл. ' + error,
         });
-        setUploadProgress(0);
-        setUploadMessage('');
         setIsSubmitting(false);
     }
   }
