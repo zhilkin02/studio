@@ -15,18 +15,18 @@ export default {
         code: ['monospace'],
       },
       colors: {
-        background: 'hsl(var(--background))',
+        background: 'hsl(var(--background) / var(--background-opacity, 1))',
         foreground: 'hsl(var(--foreground))',
         card: {
           DEFAULT: 'hsl(var(--card) / var(--card-opacity, 1))',
           foreground: 'hsl(var(--card-foreground))',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
+          DEFAULT: 'hsl(var(--popover) / var(--popover-opacity, 1))',
           foreground: 'hsl(var(--popover-foreground))',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
+          DEFAULT: 'hsl(var(--primary) / var(--primary-opacity, 1))',
           foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
@@ -34,7 +34,7 @@ export default {
           foreground: 'hsl(var(--secondary-foreground))',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
+          DEFAULT: 'hsl(var(--muted) / var(--muted-opacity, 1))',
           foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
@@ -97,5 +97,3 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-
-    

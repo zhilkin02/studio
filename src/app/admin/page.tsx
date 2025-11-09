@@ -263,7 +263,11 @@ const appearanceFormSchema = z.object({
   cardForegroundHex: hexColor,
   popoverHex: hexColor,
   popoverForegroundHex: hexColor,
+  backgroundOpacity: z.number().min(0).max(1),
   cardOpacity: z.number().min(0).max(1),
+  popoverOpacity: z.number().min(0).max(1),
+  mutedOpacity: z.number().min(0).max(1),
+  primaryOpacity: z.number().min(0).max(1),
 });
 
 
@@ -282,7 +286,11 @@ function AppearanceSettings() {
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
         defaultValues: {
+            backgroundOpacity: 1,
             cardOpacity: 1,
+            popoverOpacity: 1,
+            mutedOpacity: 1,
+            primaryOpacity: 1,
         }
     });
 
@@ -308,7 +316,11 @@ function AppearanceSettings() {
                 cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
                 popoverHex: themeSettings.popoverHex || '#111827',
                 popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
+                backgroundOpacity: themeSettings.backgroundOpacity ?? 1,
                 cardOpacity: themeSettings.cardOpacity ?? 1,
+                popoverOpacity: themeSettings.popoverOpacity ?? 1,
+                mutedOpacity: themeSettings.mutedOpacity ?? 1,
+                primaryOpacity: themeSettings.primaryOpacity ?? 1,
             });
         }
     }, [themeSettings, form]);
@@ -335,7 +347,11 @@ function AppearanceSettings() {
         '--border': hexToHsl(watchedValues.borderHex ?? ''),
         '--input': hexToHsl(watchedValues.inputHex ?? ''),
         '--ring': hexToHsl(watchedValues.ringHex ?? ''),
+        '--background-opacity': watchedValues.backgroundOpacity ?? 1,
         '--card-opacity': watchedValues.cardOpacity ?? 1,
+        '--popover-opacity': watchedValues.popoverOpacity ?? 1,
+        '--muted-opacity': watchedValues.mutedOpacity ?? 1,
+        '--primary-opacity': watchedValues.primaryOpacity ?? 1,
     } as React.CSSProperties;
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
@@ -363,7 +379,11 @@ function AppearanceSettings() {
             border: hexToHsl(values.borderHex),
             input: hexToHsl(values.inputHex),
             ring: hexToHsl(values.ringHex),
+            backgroundOpacity: values.backgroundOpacity,
             cardOpacity: values.cardOpacity,
+            popoverOpacity: values.popoverOpacity,
+            mutedOpacity: values.mutedOpacity,
+            primaryOpacity: values.primaryOpacity,
         };
         
         setDoc(themeDocRef, themeData, { merge: true })
@@ -425,7 +445,7 @@ function AppearanceSettings() {
             </Alert>
         )
     }
-    const ColorPickerInput = ({ name, label }: { name: keyof z.infer<typeof appearanceFormSchema>, label: string }) => (
+    const ColorPickerInput = ({ name, label }: { name: Exclude<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity`>, label: string }) => (
         <FormField
             control={form.control}
             name={name}
@@ -434,17 +454,39 @@ function AppearanceSettings() {
                     <FormLabel>{label}</FormLabel>
                     <FormControl>
                             <div className="relative">
-                            <Input {...field} disabled={isSubmitting} className="pr-12" value={field.value || ''}/>
+                            <Input {...field} disabled={isSubmitting} className="pr-12" value={field.value as string || ''}/>
                             <Controller
                                 name={name}
                                 control={form.control}
                                 render={({ field: { onChange, value } }) => (
-                                    <input type="color" value={value || '#000000'} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                    <input type="color" value={value as string || '#000000'} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
                                 )}
                             />
                         </div>
                     </FormControl>
                     <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+
+    const OpacitySlider = ({ name, label }: { name: Extract<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity`>, label: string }) => (
+        <FormField
+            control={form.control}
+            name={name}
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>{label} ({typeof field.value === 'number' ? field.value.toFixed(2) : '1.00'})</FormLabel>
+                    <FormControl>
+                        <Slider
+                            value={[field.value]}
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            onValueChange={(value) => field.onChange(value[0])}
+                            disabled={isSubmitting}
+                        />
+                    </FormControl>
                 </FormItem>
             )}
         />
@@ -503,26 +545,13 @@ function AppearanceSettings() {
                              <Separator />
                             <div>
                                 <h3 className="text-lg font-medium mb-4">Прозрачность</h3>
-                                <FormField
-                                    control={form.control}
-                                    name="cardOpacity"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Прозрачность карточки ({typeof field.value === 'number' ? field.value.toFixed(2) : '1.00'})</FormLabel>
-                                            <FormControl>
-                                                <Slider
-                                                    defaultValue={[1]}
-                                                    value={[field.value]}
-                                                    min={0}
-                                                    max={1}
-                                                    step={0.05}
-                                                    onValueChange={(value) => field.onChange(value[0])}
-                                                    disabled={isSubmitting}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
+                                <div className="space-y-4">
+                                    <OpacitySlider name="backgroundOpacity" label="Фон сайта" />
+                                    <OpacitySlider name="cardOpacity" label="Карточки" />
+                                    <OpacitySlider name="popoverOpacity" label="Всплывающие окна" />
+                                    <OpacitySlider name="mutedOpacity" label="Приглушенные блоки" />
+                                    <OpacitySlider name="primaryOpacity" label="Основной цвет/Кнопки" />
+                                </div>
                             </div>
                             
                             <Separator />

@@ -45,7 +45,11 @@ async function ThemeLoader() {
         --border: ${theme.border || '240 5% 20%'};
         --input: ${theme.input || '240 5% 20%'};
         --ring: ${theme.ring || '262 80% 60%'};
+        --background-opacity: ${theme.backgroundOpacity ?? 1};
         --card-opacity: ${theme.cardOpacity ?? 1};
+        --popover-opacity: ${theme.popoverOpacity ?? 1};
+        --muted-opacity: ${theme.mutedOpacity ?? 1};
+        --primary-opacity: ${theme.primaryOpacity ?? 1};
       }
     `;
     return <style>{style}</style>;
@@ -86,5 +90,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
