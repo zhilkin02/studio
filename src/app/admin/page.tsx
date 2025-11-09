@@ -281,6 +281,9 @@ function AppearanceSettings() {
 
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
+        defaultValues: {
+            cardOpacity: 1,
+        }
     });
 
      useEffect(() => {
@@ -505,7 +508,7 @@ function AppearanceSettings() {
                                     name="cardOpacity"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Прозрачность карточки ({field.value.toFixed(2)})</FormLabel>
+                                            <FormLabel>Прозрачность карточки ({typeof field.value === 'number' ? field.value.toFixed(2) : '1.00'})</FormLabel>
                                             <FormControl>
                                                 <Slider
                                                     defaultValue={[1]}
@@ -661,6 +664,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
-    
