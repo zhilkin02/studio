@@ -735,8 +735,8 @@ function AppearanceSettings() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <Form {...form}>
+                <Form {...form}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                              <div>
                                  <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
@@ -800,55 +800,55 @@ function AppearanceSettings() {
                                 {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить изменения'}
                             </Button>
                         </form>
-                    </Form>
-                    
-                    {/* --- PREVIEW PANEL --- */}
-                    <div className="space-y-6">
-                        <h3 className="text-lg font-medium">Панель предпросмотра</h3>
-                         <div style={previewStyle} className="rounded-lg border p-6 bg-background text-foreground space-y-6">
-                            
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Пример карточки</CardTitle>
-                                    <CardDescription>Это описание карточки.</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <p>Это основной контент внутри карточки. Здесь используется цвет текста карточки.</p>
-                                </CardContent>
-                                <CardFooter className="flex justify-between">
-                                    <Button variant="ghost">Отмена</Button>
-                                    <Button>Принять</Button>
-                                </CardFooter>
-                            </Card>
+                        
+                        {/* --- PREVIEW PANEL --- */}
+                        <div className="space-y-6">
+                            <h3 className="text-lg font-medium">Панель предпросмотра</h3>
+                             <div style={previewStyle} className="rounded-lg border p-6 bg-background text-foreground space-y-6">
+                                
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Пример карточки</CardTitle>
+                                        <CardDescription>Это описание карточки.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p>Это основной контент внутри карточки. Здесь используется цвет текста карточки.</p>
+                                    </CardContent>
+                                    <CardFooter className="flex justify-between">
+                                        <Button variant="ghost">Отмена</Button>
+                                        <Button>Принять</Button>
+                                    </CardFooter>
+                                </Card>
 
-                            <div className="flex flex-wrap gap-4 items-center">
-                                <Button>Основная</Button>
-                                <Button variant="secondary">Вторичная</Button>
-                                <Button variant="destructive">Удалить</Button>
-                                <Button variant="outline">Контурная</Button>
-                                <Button variant="link">Ссылка</Button>
+                                <div className="flex flex-wrap gap-4 items-center">
+                                    <Button>Основная</Button>
+                                    <Button variant="secondary">Вторичная</Button>
+                                    <Button variant="destructive">Удалить</Button>
+                                    <Button variant="outline">Контурная</Button>
+                                    <Button variant="link">Ссылка</Button>
+                                </div>
+                                
+                                <div>
+                                    <FormLabel htmlFor="preview-input">Поле ввода</FormLabel>
+                                    <Input id="preview-input" placeholder="Введите текст..."/>
+                                </div>
+
+                                <Alert variant="default">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Обычное уведомление</AlertTitle>
+                                    <AlertDescription>Это пример обычного уведомления для информации.</AlertDescription>
+                                </Alert>
+                                 <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Уведомление об ошибке</AlertTitle>
+                                    <AlertDescription>Это пример уведомления об ошибке.</AlertDescription>
+                                 </Alert>
+
+                                <p>Это <span className="text-primary">основной</span>, <span className="text-secondary">вторичный</span>, <span className="text-accent">акцентный</span> и <span className="text-muted-foreground">приглушенный</span> текст.</p>
                             </div>
-                            
-                            <div>
-                                <FormLabel htmlFor="preview-input">Поле ввода</FormLabel>
-                                <Input id="preview-input" placeholder="Введите текст..."/>
-                            </div>
-
-                            <Alert variant="default">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Обычное уведомление</AlertTitle>
-                                <AlertDescription>Это пример обычного уведомления для информации.</AlertDescription>
-                            </Alert>
-                             <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Уведомление об ошибке</AlertTitle>
-                                <AlertDescription>Это пример уведомления об ошибке.</AlertDescription>
-                            </Alert>
-
-                            <p>Это <span className="text-primary">основной</span>, <span className="text-secondary">вторичный</span>, <span className="text-accent">акцентный</span> и <span className="text-muted-foreground">приглушенный</span> текст.</p>
                         </div>
                     </div>
-                </div>
+                </Form>
             </CardContent>
         </Card>
     )
@@ -899,7 +899,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
-
-    
