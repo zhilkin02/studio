@@ -4,15 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Download, Search, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import React, { useMemo, useState, useEffect } from "react";
-import Link from "next/link";
-import DOMPurify from 'dompurify';
+import React from "react";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -35,63 +32,6 @@ interface VideoFragment {
     title: string;
     description: string;
     filePath: string; // This will be a YouTube URL
-}
-
-function CustomPageViewer() {
-    const firestore = useFirestore();
-    const [sanitizedHtml, setSanitizedHtml] = useState('');
-
-    const customPageRef = useMemo(() => {
-        if (!firestore) return null;
-        return doc(firestore, 'customPages', 'main');
-    }, [firestore]);
-
-    const { data, loading, error } = useDoc(customPageRef, { listen: true });
-
-    useEffect(() => {
-        if (typeof window !== 'undefined' && data?.html) {
-            setSanitizedHtml(DOMPurify.sanitize(data.html));
-        } else {
-            setSanitizedHtml('');
-        }
-    }, [data?.html]);
-
-
-    if (loading) {
-        return (
-            <div className="p-8 space-y-4">
-                <Skeleton className="h-8 w-1/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-            </div>
-        );
-    }
-    
-    if (error) {
-        return (
-            <div className="container mx-auto px-4 py-8">
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Ошибка загрузки</AlertTitle>
-                    <AlertDescription>
-                       Не удалось загрузить содержимое страницы. Проверьте права доступа.
-                       <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
-                    </AlertDescription>
-                </Alert>
-            </div>
-        )
-    }
-
-    const htmlContent = sanitizedHtml || '';
-    const cssContent = data?.css || '';
-
-    return (
-        <>
-            <style jsx global>{cssContent}</style>
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
-        </>
-    );
 }
 
 
@@ -193,18 +133,8 @@ function ApprovedVideos() {
 
 
 export default function Home() {
-  const firestore = useFirestore();
-  const customPageRef = useMemo(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'customPages', 'main');
-  }, [firestore]);
-  const { data: customPageData, loading: customPageLoading } = useDoc(customPageRef, { listen: true });
-
-  const hasCustomContent = !customPageLoading && customPageData && (customPageData.html || customPageData.css);
-
   return (
     <div className="container mx-auto px-4 py-8">
-      {hasCustomContent ? <CustomPageViewer /> : (
         <section className="text-center py-16">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
             Коротко О Не Коротком
@@ -213,7 +143,6 @@ export default function Home() {
             Найдите идеальный фрагмент из фильма или сериала за секунды.
             </p>
         </section>
-      )}
       
       <section className="mb-12">
           <div className="max-w-2xl mx-auto flex gap-2">

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Film, User as UserIcon, LogIn, LogOut, Upload, Shield, Code } from 'lucide-react';
+import { Film, User as UserIcon, LogIn, LogOut, Upload, Shield } from 'lucide-react';
 import { useUser } from '@/firebase/auth/use-user';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -88,12 +88,6 @@ function AuthButtons() {
           <Link href="/profile">
             <UserIcon className="mr-2 h-4 w-4" />
             <span>Профиль</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-           <Link href="/">
-            <Code className="mr-2 h-4 w-4" />
-            <span>Главная</span>
           </Link>
         </DropdownMenuItem>
         {user.isAdmin && (

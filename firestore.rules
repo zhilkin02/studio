@@ -62,13 +62,5 @@ service cloud.firestore {
        // Write rules for this collection can be added later if needed.
        allow write: if false; 
     }
-    
-    // --- Custom HTML/CSS Pages ---
-    // Anyone can read the custom page content.
-    // Only admins can write to it.
-    match /customPages/{pageId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
   }
 }

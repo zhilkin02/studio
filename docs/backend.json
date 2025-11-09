@@ -135,22 +135,6 @@
         "destructiveHex": { "type": "string", "description": "Destructive color in HEX format." },
         "destructiveForegroundHex": { "type": "string", "description": "Destructive foreground color in HEX format." }
       }
-    },
-    "CustomPage": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Custom Page",
-      "type": "object",
-      "description": "Stores custom HTML and CSS content for a specific page.",
-      "properties": {
-        "html": {
-          "type": "string",
-          "description": "The raw HTML content for the page."
-        },
-        "css": {
-          "type": "string",
-          "description": "The raw CSS content for the page."
-        }
-      }
     }
   },
   "auth": {
@@ -252,22 +236,6 @@
             {
               "name": "settingId",
               "description": "The unique identifier of the setting document, e.g., 'theme'."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/customPages/{pageId}",
-        "definition": {
-          "entityName": "CustomPage",
-          "schema": {
-            "$ref": "#/backend/entities/CustomPage"
-          },
-          "description": "Stores custom HTML and CSS for user-defined pages. Document ID 'main' is used for the primary custom page. Publicly readable, admin writable.",
-          "params": [
-            {
-              "name": "pageId",
-              "description": "The unique identifier for the custom page, e.g., 'main'."
             }
           ]
         }
