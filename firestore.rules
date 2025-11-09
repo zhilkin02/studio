@@ -35,7 +35,7 @@ service cloud.firestore {
     // Anyone can read the site's text content.
     // Only admins can change it.
     match /site_content/{contentId} {
-        allow read: if true;
+        allow get, list: if true;
         allow write: if isAdmin();
     }
 
