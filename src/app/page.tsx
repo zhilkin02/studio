@@ -2,8 +2,8 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Download, Search } from "lucide-react";
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase';
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import React from "react";
+import Link from "next/link";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -56,6 +57,9 @@ function ApprovedVideos() {
                <Skeleton className="h-6 w-3/4 mb-2" />
                <Skeleton className="h-4 w-full" />
             </CardContent>
+             <CardFooter>
+                <Skeleton className="h-10 w-28" />
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -91,7 +95,7 @@ function ApprovedVideos() {
       {(videos as VideoFragment[]).map((video) => {
         const videoId = getYouTubeId(video.filePath);
         return (
-          <Card key={video.id}>
+          <Card key={video.id} className="flex flex-col">
             <CardHeader className="p-0">
                {videoId ? (
                     <iframe
@@ -107,10 +111,20 @@ function ApprovedVideos() {
                     </div>
                 )}
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 flex-grow">
               <h3 className="font-semibold text-lg truncate">{video.title}</h3>
               <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
             </CardContent>
+            <CardFooter>
+                 {videoId && (
+                     <Button asChild variant="secondary" className="w-full">
+                        <Link href={`/api/download?videoId=${videoId}`}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Скачать
+                        </Link>
+                    </Button>
+                 )}
+            </CardFooter>
           </Card>
         )
       })}
