@@ -49,6 +49,10 @@ footer {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+
+    --header-image-url: none;
+    --main-image-url: none;
+    --footer-image-url: none;
   }
   .dark {
     --background: 240 5% 8%;

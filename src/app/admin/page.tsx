@@ -11,7 +11,7 @@ import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Palette, UploadCloud, Image } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -619,7 +619,7 @@ function AppearanceSettings() {
                          </>
                        ) : (
                          <>
-                           <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground"/>
+                           {imageUploading === fieldName ? <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground"/> : <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground"/>}
                             <p className="mt-2 text-sm text-muted-foreground">
                                 {imageUploading === fieldName ? 'Загрузка...' : 'Нажмите, чтобы выбрать файл'}
                             </p>
