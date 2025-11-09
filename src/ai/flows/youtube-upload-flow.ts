@@ -82,8 +82,8 @@ const uploadVideoFlow = ai.defineFlow(
 
       const buffer = Buffer.from(input.videoDataUri.split(',')[1], 'base64');
       
-      console.log('Начало загрузки видео на YouTube...');
-      const uploadResponse = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status', {
+      console.log('Начало загрузки видео на YouTube (этап 1: создание сессии)...');
+      const uploadResponse = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -94,32 +94,47 @@ const uploadVideoFlow = ai.defineFlow(
       });
 
       if (!uploadResponse.ok || !uploadResponse.headers.has('location')) {
-         const errorData = await uploadResponse.json();
-         console.error('Ошибка на первом этапе загрузки (создание metadata):', errorData);
-         throw new Error(`API metadata error: ${errorData.error.message}`);
+         const errorText = await uploadResponse.text();
+         let errorMessage;
+         try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error.message;
+         } catch(e) {
+            errorMessage = errorText;
+         }
+         console.error('Ошибка на первом этапе загрузки (создание metadata):', errorMessage);
+         throw new Error(`API metadata error: ${errorMessage}`);
       }
 
       const locationUrl = uploadResponse.headers.get('location')!;
       console.log('Получен URL для загрузки:', locationUrl);
 
-      console.log('Загрузка бинарных данных видео...');
+      console.log('Загрузка бинарных данных видео (этап 2)...');
       const uploadVideoResponse = await fetch(locationUrl, {
-          method: 'POST',
+          method: 'PUT', // Используем PUT для загрузки данных в resumable сессию
           headers: {
               'Content-Type': 'video/*'
           },
           body: buffer
       });
       
-      const responseData = await uploadVideoResponse.json();
-
       if (!uploadVideoResponse.ok) {
-        console.error('Ошибка на втором этапе загрузки (передача видео):', responseData);
-        throw new Error(`API upload error: ${responseData.error.message}`);
+        const errorText = await uploadVideoResponse.text();
+        let errorData;
+        try {
+           errorData = JSON.parse(errorText);
+        } catch(e) {
+            errorData = {error: {message: errorText}};
+        }
+        console.error('Ошибка на втором этапе загрузки (передача видео):', errorData);
+        throw new Error(`API upload error: ${errorData.error.message}`);
       }
+      
+      const responseData = await uploadVideoResponse.json();
 
       const videoId = responseData.id;
       if (!videoId) {
+        console.error("YouTube API не вернул videoId в ответе:", responseData);
         throw new Error('YouTube API did not return a video ID.');
       }
 
