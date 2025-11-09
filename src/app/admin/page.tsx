@@ -25,6 +25,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 
 
 function hexToHsl(hex: string): string | null {
@@ -76,14 +77,16 @@ const getYouTubeId = (url: string) => {
 
 const editFormSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().min(10, 'Описание должно быть не менее 10 символов.').max(5000, 'Описание должно быть не более 5000 символов.'),
+  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
+  keywords: z.string().optional(),
 });
 
 
 interface Video {
     id: string;
     title: string;
-    description: string;
+    description?: string;
+    keywords?: string[];
     filePath: string; // This will be a YouTube URL
     uploaderId: string;
 }
@@ -97,7 +100,8 @@ function EditVideoForm({ video, onFinish }: { video: Video, onFinish: () => void
         resolver: zodResolver(editFormSchema),
         defaultValues: {
             title: video.title,
-            description: video.description,
+            description: video.description || '',
+            keywords: video.keywords?.join(', ') || '',
         },
     });
 
@@ -109,6 +113,7 @@ function EditVideoForm({ video, onFinish }: { video: Video, onFinish: () => void
         const data = {
             title: values.title,
             description: values.description,
+            keywords: values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [],
         };
 
         updateDoc(docRef, data)
@@ -158,10 +163,24 @@ function EditVideoForm({ video, onFinish }: { video: Video, onFinish: () => void
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Описание</FormLabel>
+                            <FormLabel>Описание (необязательно)</FormLabel>
                             <FormControl>
                                 <Textarea className="resize-y" {...field} disabled={isSubmitting} />
                             </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="keywords"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Ключевые слова</FormLabel>
+                            <FormControl>
+                                <Input {...field} placeholder="фраза 1, фраза 2, еще фраза" disabled={isSubmitting} />
+                            </FormControl>
+                            <FormDescription>Перечислите ключевые слова через запятую.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -275,7 +294,12 @@ function PublicVideosList() {
                         <Card key={video.id}>
                             <CardHeader>
                                 <CardTitle className="truncate">{video.title}</CardTitle>
-                                <CardDescription className="line-clamp-3">{video.description}</CardDescription>
+                                {video.description && <CardDescription className="line-clamp-3">{video.description}</CardDescription>}
+                                {video.keywords && video.keywords.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 pt-2">
+                                        {video.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                                    </div>
+                                )}
                             </CardHeader>
                             <CardContent>
                                 {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video"></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
@@ -299,7 +323,7 @@ function PublicVideosList() {
                     <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
                             <DialogTitle>Редактировать видео</DialogTitle>
-                            <DialogDescription>Внесите изменения в название или описание видео.</DialogDescription>
+                            <DialogDescription>Внесите изменения в название, описание или ключевые слова видео.</DialogDescription>
                         </DialogHeader>
                         <EditVideoForm video={editingVideo} onFinish={() => setEditingVideo(null)} />
                     </DialogContent>
@@ -442,7 +466,12 @@ function PendingVideosList() {
                     <Card key={video.id}>
                         <CardHeader>
                             <CardTitle className="truncate">{video.title}</CardTitle>
-                            <CardDescription className="line-clamp-3">{video.description}</CardDescription>
+                            {video.description && <CardDescription className="line-clamp-3">{video.description}</CardDescription>}
+                             {video.keywords && video.keywords.length > 0 && (
+                                <div className="flex flex-wrap gap-1 pt-2">
+                                    {video.keywords.map(kw => <Badge key={kw} variant="outline">{kw}</Badge>)}
+                                </div>
+                            )}
                         </CardHeader>
                         <CardContent>
                             {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video" ></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}

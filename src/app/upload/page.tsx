@@ -22,7 +22,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().min(10, 'Описание должно быть не менее 10 символов.').max(5000, 'Описание должно быть не более 5000 символов.'),
+  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
+  keywords: z.string().optional(),
 });
 
 export default function UploadPage() {
@@ -47,6 +48,7 @@ export default function UploadPage() {
     defaultValues: {
       title: '',
       description: '',
+      keywords: '',
     },
   });
 
@@ -89,7 +91,7 @@ export default function UploadPage() {
 
             const result = await uploadVideoToYouTube({
                 title: values.title,
-                description: values.description,
+                description: values.description || '', // Pass empty string if undefined
                 videoDataUri: videoDataUri,
             });
             
@@ -103,10 +105,12 @@ export default function UploadPage() {
 
             const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
             const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
+            const keywords = values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [];
 
             const docData = {
                 title: values.title,
-                description: values.description,
+                description: values.description || '',
+                keywords: keywords,
                 filePath: youtubeUrl,
                 uploaderId: user.uid,
                 status: 'pending',
@@ -234,7 +238,7 @@ export default function UploadPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Описание</FormLabel>
+                    <FormLabel>Описание (необязательно)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Опишите, что происходит в видео, какие эмоции оно вызывает или чем оно примечательно."
@@ -245,6 +249,26 @@ export default function UploadPage() {
                     </FormControl>
                      <FormDescription>
                       Подробное описание поможет другим пользователям найти ваше видео.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="keywords"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ключевые слова</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="смех, мем, цитата, ирония"
+                        {...field}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                     <FormDescription>
+                      Перечислите через запятую ключевые слова, которые помогут найти это видео.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

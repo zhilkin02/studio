@@ -55,6 +55,13 @@
           "type": "string",
           "description": "A description of the video fragment."
         },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Keywords for the video fragment to aid in search."
+        },
         "uploadDate": {
           "type": "string",
           "description": "The date and time the video fragment was uploaded.",
@@ -76,7 +83,6 @@
       "required": [
         "id",
         "title",
-        "description",
         "uploadDate",
         "uploaderId",
         "filePath",

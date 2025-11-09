@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useState, useMemo } from "react";
 import { EditableText } from "@/components/editable-text";
+import { Badge } from "@/components/ui/badge";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -33,6 +34,7 @@ interface VideoFragment {
     title: string;
     description: string;
     filePath: string; // This will be a YouTube URL
+    keywords?: string[];
 }
 
 
@@ -50,11 +52,15 @@ export default function Home() {
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     if (!searchQuery) return videos;
+    
+    const lowercasedQuery = searchQuery.toLowerCase();
 
-    return (videos as VideoFragment[]).filter(video =>
-      video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return (videos as VideoFragment[]).filter(video => {
+        const titleMatch = video.title.toLowerCase().includes(lowercasedQuery);
+        const descriptionMatch = video.description && video.description.toLowerCase().includes(lowercasedQuery);
+        const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
+        return titleMatch || descriptionMatch || keywordsMatch;
+    });
   }, [videos, searchQuery]);
 
 
@@ -86,7 +92,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Button type="submit">
+            <Button type="button">
                 <Search className="mr-2 h-4 w-4" /> Поиск
             </Button>
         </div>
@@ -160,6 +166,13 @@ export default function Home() {
                     <CardContent className="pt-4 flex-grow">
                       <h3 className="font-semibold text-lg truncate">{video.title}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
+                       {video.keywords && video.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {video.keywords.map((keyword) => (
+                            <Badge key={keyword} variant="secondary">{keyword}</Badge>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter>
                         {videoId && (
