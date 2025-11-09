@@ -11,6 +11,7 @@ import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -94,16 +95,43 @@ function PendingVideosList() {
         if (!firestore) return;
         setMutatingId(video.id);
 
+        const videoId = getYouTubeId(video.filePath);
+        if (!videoId) {
+            toast({
+                variant: "destructive",
+                title: "Ошибка",
+                description: "Не удалось извлечь ID видео из URL."
+            });
+            setMutatingId(null);
+            return;
+        }
+
         try {
-            // We only need to delete the Firestore document.
-            // The video remains on YouTube as 'unlisted' but is gone from our app.
+            // Step 1: Delete video from YouTube
+            toast({
+                title: "Удаление с YouTube...",
+                description: `Начался процесс удаления "${video.title}" с YouTube.`,
+            });
+            const deleteResult = await deleteVideoFromYouTube({ videoId: videoId });
+
+            if (!deleteResult.success) {
+                throw new Error(deleteResult.error || "Не удалось удалить видео с YouTube.");
+            }
+            
+            toast({
+                title: "Удалено с YouTube",
+                description: "Видео успешно удалено с YouTube. Удаление из базы данных...",
+            });
+
+            // Step 2: Delete from Firestore
             const pendingDocRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(pendingDocRef);
 
             toast({
-                title: "Видео отклонено",
-                description: `"${video.title}" было удалено из очереди модерации.`,
+                title: "Видео отклонено и удалено",
+                description: `"${video.title}" было полностью удалено.`,
             });
+
             // Optimistic UI update
             if (setData) {
               setData(currentVideos => currentVideos?.filter(v => v.id !== video.id) ?? null);
@@ -114,7 +142,7 @@ function PendingVideosList() {
              toast({
                 variant: "destructive",
                 title: "Ошибка отклонения",
-                description: "Не удалось удалить запись из базы данных."
+                description: e.message || "Произошла неизвестная ошибка."
             });
         } finally {
             setMutatingId(null);
