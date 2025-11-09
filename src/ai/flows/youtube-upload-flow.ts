@@ -44,8 +44,6 @@ const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
 );
-// Установите URI перенаправления, который вы добавили в консоли Google Cloud
-oauth2Client.redirect_uri = 'https://developers.google.com/oauthplayground';
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 const youtube = google.youtube({
@@ -67,6 +65,13 @@ const uploadVideoFlow = ai.defineFlow(
   },
   async (input) => {
     
+    // DEBUG: Логирование учетных данных для проверки, что они загружены
+    console.log('--- YouTube Upload Flow ---');
+    console.log('Используемый CLIENT_ID:', CLIENT_ID ? `...${CLIENT_ID.slice(-4)}` : 'НЕ НАЙДЕН');
+    console.log('Используемый CLIENT_SECRET:', CLIENT_SECRET ? `...${CLIENT_SECRET.slice(-4)}` : 'НЕ НАЙДЕН');
+    console.log('Используемый REFRESH_TOKEN:', REFRESH_TOKEN ? `...${REFRESH_TOKEN.slice(-4)}` : 'НЕ НАЙДЕН');
+    console.log('---------------------------');
+
     // Проверка, что учетные данные YouTube были настроены.
     if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
         const errorMessage = 'YouTube API не настроен на сервере. Пожалуйста, следуйте инструкциям в файле src/ai/flows/youtube-upload-flow.ts для настройки учетных данных.';
