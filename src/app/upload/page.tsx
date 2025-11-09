@@ -15,8 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Loader2, UploadCloud, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-// import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
+import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
@@ -63,92 +62,83 @@ export default function UploadPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    toast({
-        variant: "destructive",
-        title: "Функция временно недоступна",
-        description: "Загрузка на YouTube в данный момент отключена из-за проблем с аутентификацией Google.",
-    });
-    return;
+    if (!user || !firestore) {
+      toast({ variant: "destructive", title: "Ошибка", description: "Вы не авторизованы или база данных недоступна." });
+      return;
+    }
+    if (!videoFile) {
+        toast({ variant: "destructive", title: "Видеофайл не выбран", description: "Пожалуйста, выберите видеофайл для загрузки." });
+        return;
+    }
 
-    // if (!user || !firestore) {
-    //   toast({ variant: "destructive", title: "Ошибка", description: "Вы не авторизованы или база данных недоступна." });
-    //   return;
-    // }
-    // if (!videoFile) {
-    //     toast({ variant: "destructive", title: "Видеофайл не выбран", description: "Пожалуйста, выберите видеофайл для загрузки." });
-    //     return;
-    // }
-
-    // setIsSubmitting(true);
+    setIsSubmitting(true);
     
-    // try {
-    //     const reader = new FileReader();
-    //     reader.readAsDataURL(videoFile);
-    //     reader.onload = async () => {
-    //         const videoDataUri = reader.result as string;
+    try {
+        const reader = new FileReader();
+        reader.readAsDataURL(videoFile);
+        reader.onload = async () => {
+            const videoDataUri = reader.result as string;
             
-    //         setUploadMessage("Отправка видео на сервер...");
-    //         setUploadProgress(25);
+            setUploadMessage("Отправка видео на сервер...");
+            setUploadProgress(25);
 
-    //         // const result = await uploadVideoToYouTube({
-    //         //     title: values.title,
-    //         //     description: values.description,
-    //         //     videoDataUri: videoDataUri
-    //         // });
+            const result = await uploadVideoToYouTube({
+                title: values.title,
+                description: values.description,
+                videoDataUri: videoDataUri
+            });
             
-    //         setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
-    //         setUploadProgress(75);
+            setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
+            setUploadProgress(75);
 
-    //         // if (!result || !result.videoId) {
-    //         //     throw new Error(result.error || 'Не удалось получить ID видео от YouTube.');
-    //         // }
+            if (!result || !result.videoId) {
+                throw new Error(result.error || 'Не удалось получить ID видео от YouTube.');
+            }
 
-    //         const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
-    //         // const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
-    //         const youtubeUrl = `https://www.youtube.com/watch?v=placeholder`;
+            const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
+            const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
 
+            const docData = {
+                title: values.title,
+                description: values.description,
+                filePath: youtubeUrl,
+                uploaderId: user.uid,
+                status: 'pending',
+                uploadDate: serverTimestamp(),
+            };
 
-    //         const docData = {
-    //             title: values.title,
-    //             description: values.description,
-    //             filePath: youtubeUrl,
-    //             uploaderId: user.uid,
-    //             status: 'pending',
-    //             uploadDate: serverTimestamp(),
-    //         };
-
-    //         await addDoc(pendingCollectionRef, docData);
+            await addDoc(pendingCollectionRef, docData);
             
-    //         setUploadProgress(100);
-    //         setUploadMessage("Готово!");
+            setUploadProgress(100);
+            setUploadMessage("Готово!");
 
-    //         toast({
-    //             title: "Успешно отправлено!",
-    //             description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
-    //             action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
-    //         });
+            toast({
+                title: "Успешно отправлено!",
+                description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
+                action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
+            });
             
-    //         // Reset state and navigate
-    //         form.reset();
-    //         setVideoFile(null);
-    //         router.push('/profile');
-    //     };
-    //     reader.onerror = (error) => {
-    //         throw new Error('Не удалось прочитать файл: ' + error);
-    //     }
+            // Reset state and navigate
+            form.reset();
+            setVideoFile(null);
+            router.push('/profile');
+        };
+        reader.onerror = (error) => {
+            throw new Error('Не удалось прочитать файл: ' + error);
+        }
 
-    // } catch (e: any) {
-    //     console.error("Error in upload process:", e);
-    //     toast({
-    //         variant: "destructive",
-    //         title: "Ошибка загрузки",
-    //         description: e.message || 'Произошла неизвестная ошибка.',
-    //     });
-    //     setUploadProgress(0);
-    //     setUploadMessage('');
-    // } finally {
-    //     setIsSubmitting(false);
-    // }
+    } catch (e: any) {
+        console.error("Error in upload process:", e);
+        toast({
+            variant: "destructive",
+            title: "Ошибка загрузки",
+            description: e.message || 'Произошла неизвестная ошибка.',
+        });
+        setUploadProgress(0);
+        setUploadMessage('');
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   if (userLoading || !user) {
@@ -168,13 +158,6 @@ export default function UploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Функция временно отключена</AlertTitle>
-              <AlertDescription>
-                Загрузка видео на YouTube в данный момент не работает из-за неразрешимых проблем с аутентификацией Google. Мы работаем над этим, но пока эта функция недоступна.
-              </AlertDescription>
-          </Alert>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               
@@ -248,7 +231,7 @@ export default function UploadPage() {
               )}
 
 
-              <Button type="submit" disabled={true || !videoFile}>
+              <Button type="submit" disabled={isSubmitting || !videoFile}>
                 {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Загрузка...</> : 'Загрузить и отправить на модерацию'}
               </Button>
             </form>
