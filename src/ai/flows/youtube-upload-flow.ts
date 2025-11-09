@@ -15,20 +15,24 @@ import { Readable } from 'stream';
 // ##################################################################################
 // ВАЖНО: Вы должны настроить эти значения в вашей среде.
 //
-// 1. CLIENT_ID и CLIENT_SECRET: Вы уже получили их, и я вставил их ниже.
+// 1. CLIENT_ID и CLIENT_SECRET:
+//    - Перейдите в Google Cloud Console -> APIs & Services -> Credentials.
+//    - Нажмите "Create Credentials" -> "OAuth client ID".
+//    - **ВАЖНО**: Выберите тип приложения "Web application" (Веб-приложение).
+//    - В разделе "Authorized redirect URIs" добавьте `https://developers.google.com/oauthplayground`.
+//    - Создайте учетные данные и скопируйте Client ID и Client Secret сюда.
 //
 // 2. REFRESH_TOKEN: Это самый сложный шаг. Вам нужно получить этот токен для вашего канала.
 //    Это **одноразовая настройка**.
-//    - Самый простой способ сделать это - использовать "OAuth 2.0 Playground" от Google:
-//        1. Перейдите на https://developers.google.com/oauthplayground
-//        2. В правом верхнем углу нажмите на шестеренку (Настройки).
-//        3. В открывшемся окне, **поставьте галочку напротив "Use your own OAuth credentials"**.
-//           - В появившиеся поля вставьте ваш Client ID и Client Secret. Закройте окно настроек.
-//        4. Слева, в шаге 1 "Select & authorize APIs", найдите "YouTube Data API v3" и выберите
-//           `https://www.googleapis.com/auth/youtube.upload`.
-//        5. Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
-//        6. В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
-//           - Вы увидите "Refresh token". Скопируйте его и вставьте ниже.
+//    - Перейдите на https://developers.google.com/oauthplayground
+//    - В правом верхнем углу нажмите на шестеренку (Настройки).
+//    - В открывшемся окне, **поставьте галочку напротив "Use your own OAuth credentials"**.
+//      - В появившиеся поля вставьте ваш Client ID и Client Secret, полученные на шаге 1. Закройте окно настроек.
+//    - Слева, в шаге 1 "Select & authorize APIs", найдите "YouTube Data API v3" и выберите
+//      `https://www.googleapis.com/auth/youtube.upload`.
+//    - Нажмите "Authorize APIs". Войдите в свой аккаунт Google и дайте разрешение.
+//    - В шаге 2 "Exchange authorization code for tokens", нажмите "Exchange authorization code for tokens".
+//      - Вы увидите "Refresh token". Скопируйте его и вставьте ниже.
 //
 // 3. Сохраните REFRESH_TOKEN ниже.
 // ##################################################################################
@@ -41,6 +45,8 @@ const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
 );
+// Установите URI перенаправления, который вы добавили в консоли Google Cloud
+oauth2Client.redirect_uri = 'https://developers.google.com/oauthplayground';
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 const youtube = google.youtube({
