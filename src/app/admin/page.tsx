@@ -565,7 +565,10 @@ function AppearanceSettings() {
 
 
     const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
-        if (!app) return;
+        if (!app) {
+            toast({ variant: 'destructive', title: 'Ошибка', description: 'Firebase не инициализирован.' });
+            return;
+        };
         const storage = getStorage(app);
         setImageUploading(fieldName);
         const imageRef = storageRef(storage, `theme/${fieldName}_${Date.now()}_${file.name}`);
@@ -573,10 +576,11 @@ function AppearanceSettings() {
         try {
             const snapshot = await uploadBytes(imageRef, file);
             const downloadURL = await getDownloadURL(snapshot.ref);
-            form.setValue(fieldName, downloadURL, { shouldValidate: true });
+            form.setValue(fieldName, downloadURL, { shouldValidate: true, shouldDirty: true });
             toast({ title: 'Изображение загружено', description: 'URL был добавлен в форму.' });
         } catch (e: any) {
              toast({ variant: 'destructive', title: 'Ошибка загрузки изображения', description: e.message });
+             console.error("Upload error:", e);
         } finally {
             setImageUploading(null);
         }
@@ -740,8 +744,8 @@ function AppearanceSettings() {
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div className="space-y-8">
                              <div>
                                  <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
                                  <div className="grid grid-cols-2 gap-4">
@@ -803,7 +807,7 @@ function AppearanceSettings() {
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить изменения'}
                             </Button>
-                        </form>
+                        </div>
                         
                         {/* --- PREVIEW PANEL --- */}
                         <div className="space-y-6">
@@ -881,7 +885,7 @@ function AppearanceSettings() {
                                 <p>Это <span className="text-primary">основной</span>, <span className="text-secondary">вторичный</span>, <span className="text-accent">акцентный</span> и <span className="text-muted-foreground">приглушенный</span> текст.</p>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </Form>
             </CardContent>
         </Card>
