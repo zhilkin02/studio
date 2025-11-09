@@ -2,9 +2,9 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Search, AlertCircle } from "lucide-react";
+import { Download, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React, { useState, useMemo } from "react";
 import { EditableText } from "@/components/editable-text";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/firebase/auth/use-user";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from "@/components/ui/textarea";
+import { deleteVideoFromYouTube } from "@/ai/flows/youtube-delete-flow";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -29,18 +41,133 @@ const getYouTubeId = (url: string) => {
     }
 };
 
+const editFormSchema = z.object({
+  title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
+  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
+  keywords: z.string().optional(),
+});
+
 interface VideoFragment {
     id: string;
     title: string;
     description: string;
     filePath: string; // This will be a YouTube URL
     keywords?: string[];
+    uploaderId?: string; // Add this to satisfy the EditVideoForm video prop
 }
 
+function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: () => void }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<z.infer<typeof editFormSchema>>({
+        resolver: zodResolver(editFormSchema),
+        defaultValues: {
+            title: video.title,
+            description: video.description || '',
+            keywords: video.keywords?.join(', ') || '',
+        },
+    });
+
+    async function onSubmit(values: z.infer<typeof editFormSchema>) {
+        if (!firestore) return;
+        setIsSubmitting(true);
+
+        const docRef = doc(firestore, 'publicVideoFragments', video.id);
+        const data = {
+            title: values.title,
+            description: values.description,
+            keywords: values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [],
+        };
+
+        updateDoc(docRef, data)
+            .then(() => {
+                toast({
+                    title: "Видео обновлено!",
+                    description: "Изменения были успешно сохранены.",
+                });
+                onFinish();
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'update',
+                    requestResourceData: data,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: "destructive",
+                    title: "Ошибка обновления",
+                    description: serverError.message || "Не удалось сохранить изменения.",
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
+    }
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Название</FormLabel>
+                            <FormControl>
+                                <Input {...field} disabled={isSubmitting} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Описание (необязательно)</FormLabel>
+                            <FormControl>
+                                <Textarea className="resize-y" {...field} disabled={isSubmitting} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="keywords"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Ключевые слова</FormLabel>
+                            <FormControl>
+                                <Input {...field} placeholder="фраза 1, фраза 2, еще фраза" disabled={isSubmitting} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Отмена</Button></DialogClose>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Сохранить изменения
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+    );
+}
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [mutatingId, setMutatingId] = useState<string | null>(null);
+  const [editingVideo, setEditingVideo] = useState<VideoFragment | null>(null);
 
   const videosQuery = useMemo(() => {
     if (!firestore) return null;
@@ -62,6 +189,47 @@ export default function Home() {
         return titleMatch || descriptionMatch || keywordsMatch;
     });
   }, [videos, searchQuery]);
+  
+  const handleDelete = async (video: VideoFragment) => {
+    if (!firestore) return;
+    setMutatingId(video.id);
+
+    const videoId = getYouTubeId(video.filePath);
+    if (!videoId) {
+        toast({ variant: "destructive", title: "Ошибка", description: "Не удалось извлечь ID видео из URL." });
+        setMutatingId(null);
+        return;
+    }
+
+    try {
+        toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
+        const deleteResult = await deleteVideoFromYouTube({ videoId });
+
+        if (!deleteResult.success) {
+            throw new Error(deleteResult.error || "Не удалось удалить видео с YouTube.");
+        }
+
+        toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
+        const docRef = doc(firestore, 'publicVideoFragments', video.id);
+        
+        deleteDoc(docRef).catch((serverError) => {
+             const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+             toast({ variant: "destructive", title: "Ошибка удаления из БД", description: serverError.message });
+        });
+
+        toast({ title: "Видео удалено", description: `"${video.title}" было полностью удалено.` });
+
+    } catch (e: any) {
+        console.error("Error deleting video:", e);
+        toast({ variant: "destructive", title: "Ошибка удаления", description: e.message || "Произошла неизвестная ошибка." });
+    } finally {
+        setMutatingId(null);
+    }
+  };
 
 
   return (
@@ -146,6 +314,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const videoId = getYouTubeId(video.filePath);
+                const isMutating = mutatingId === video.id;
                 return (
                   <Card key={video.id} className="flex flex-col">
                     <CardHeader className="p-0">
@@ -174,7 +343,7 @@ export default function Home() {
                         </div>
                       )}
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex justify-between items-center">
                         {videoId && (
                             <Button asChild variant="secondary" className="w-full">
                                 <a href={`https://www.ssyoutube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer">
@@ -183,14 +352,37 @@ export default function Home() {
                                 </a>
                             </Button>
                         )}
+                         {user?.isAdmin && (
+                            <div className="flex gap-2 ml-2">
+                                <Button variant="outline" size="icon" disabled={isMutating} onClick={() => setEditingVideo(video)}>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Редактировать</span>
+                                </Button>
+                                <Button variant="destructive" size="icon" onClick={() => handleDelete(video)} disabled={isMutating}>
+                                    {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                    <span className="sr-only">Удалить</span>
+                                </Button>
+                            </div>
+                        )}
                     </CardFooter>
                   </Card>
                 )
               })}
             </div>
         )}
-
       </section>
+
+       {editingVideo && (
+            <Dialog open={!!editingVideo} onOpenChange={(isOpen) => !isOpen && setEditingVideo(null)}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Редактировать видео</DialogTitle>
+                    <DialogDescription>Внесите изменения в название, описание или ключевые слова видео.</DialogDescription>
+                </DialogHeader>
+                <EditVideoForm video={editingVideo} onFinish={() => setEditingVideo(null)} />
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

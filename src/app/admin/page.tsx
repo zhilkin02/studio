@@ -10,13 +10,10 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Search } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl } from '@/components/ui/form';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,7 +21,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -75,13 +71,6 @@ const getYouTubeId = (url: string) => {
     }
 };
 
-const editFormSchema = z.object({
-  title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
-  keywords: z.string().optional(),
-});
-
-
 interface Video {
     id: string;
     title: string;
@@ -90,276 +79,6 @@ interface Video {
     filePath: string; // This will be a YouTube URL
     uploaderId: string;
 }
-
-function EditVideoForm({ video, onFinish }: { video: Video, onFinish: () => void }) {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const form = useForm<z.infer<typeof editFormSchema>>({
-        resolver: zodResolver(editFormSchema),
-        defaultValues: {
-            title: video.title,
-            description: video.description || '',
-            keywords: video.keywords?.join(', ') || '',
-        },
-    });
-
-    async function onSubmit(values: z.infer<typeof editFormSchema>) {
-        if (!firestore) return;
-        setIsSubmitting(true);
-
-        const docRef = doc(firestore, 'publicVideoFragments', video.id);
-        const data = {
-            title: values.title,
-            description: values.description,
-            keywords: values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [],
-        };
-
-        updateDoc(docRef, data)
-            .then(() => {
-                toast({
-                    title: "Видео обновлено!",
-                    description: "Изменения были успешно сохранены.",
-                });
-                onFinish();
-            })
-            .catch((serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'update',
-                    requestResourceData: data,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                toast({
-                    variant: "destructive",
-                    title: "Ошибка обновления",
-                    description: serverError.message || "Не удалось сохранить изменения.",
-                });
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
-    }
-
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Название</FormLabel>
-                            <FormControl>
-                                <Input {...field} disabled={isSubmitting} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Описание (необязательно)</FormLabel>
-                            <FormControl>
-                                <Textarea className="resize-y" {...field} disabled={isSubmitting} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="keywords"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Ключевые слова</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="фраза 1, фраза 2, еще фраза" disabled={isSubmitting} />
-                            </FormControl>
-                            <FormDescription>Перечислите ключевые слова через запятую.</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="secondary">Отмена</Button></DialogClose>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Сохранить изменения
-                    </Button>
-                </DialogFooter>
-            </form>
-        </Form>
-    );
-}
-
-function PublicVideosList() {
-    const firestore = useFirestore();
-    const { toast } = useToast();
-    const [mutatingId, setMutatingId] = useState<string | null>(null);
-    const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-
-
-    const publicQuery = useMemo(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'publicVideoFragments'), orderBy('uploadDate', 'desc'));
-    }, [firestore]);
-
-    const { data: videos, loading, error } = useCollection(publicQuery, { listen: true });
-
-    const filteredVideos = useMemo(() => {
-        if (!videos) return [];
-        if (!searchQuery) return videos;
-
-        const lowercasedQuery = searchQuery.toLowerCase();
-
-        return (videos as Video[]).filter(video => {
-            const titleMatch = video.title.toLowerCase().includes(lowercasedQuery);
-            const descriptionMatch = video.description && video.description.toLowerCase().includes(lowercasedQuery);
-            const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
-            return titleMatch || descriptionMatch || keywordsMatch;
-        });
-    }, [videos, searchQuery]);
-
-
-    const handleDelete = async (video: Video) => {
-        if (!firestore) return;
-        setMutatingId(video.id);
-
-        const videoId = getYouTubeId(video.filePath);
-        if (!videoId) {
-            toast({ variant: "destructive", title: "Ошибка", description: "Не удалось извлечь ID видео из URL." });
-            setMutatingId(null);
-            return;
-        }
-
-        try {
-            toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
-            const deleteResult = await deleteVideoFromYouTube({ videoId });
-
-            if (!deleteResult.success) {
-                throw new Error(deleteResult.error || "Не удалось удалить видео с YouTube.");
-            }
-
-            toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
-            const docRef = doc(firestore, 'publicVideoFragments', video.id);
-            
-            deleteDoc(docRef).catch((serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'delete',
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                 toast({ variant: "destructive", title: "Ошибка удаления из БД", description: serverError.message });
-            });
-
-            toast({ title: "Видео удалено", description: `"${video.title}" было полностью удалено.` });
-
-        } catch (e: any) {
-            console.error("Error deleting video:", e);
-            toast({ variant: "destructive", title: "Ошибка удаления", description: e.message || "Произошла неизвестная ошибка." });
-        } finally {
-            setMutatingId(null);
-        }
-    };
-    
-    if (loading) {
-        return (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...Array(2)].map((_, i) => (
-                    <Card key={i}><CardHeader><Skeleton className="h-6 w-3/4 mb-2" /><Skeleton className="h-4 w-full" /></CardHeader><CardContent><Skeleton className="w-full h-auto aspect-video rounded-md" /></CardContent><CardFooter className="flex justify-end gap-2"><Skeleton className="h-10 w-24" /><Skeleton className="h-10 w-24" /></CardFooter></Card>
-                ))}
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Ошибка загрузки видео</AlertTitle>
-                <AlertDescription>
-                    Не удалось получить данные. Проверьте права доступа к коллекции `publicVideoFragments`.
-                    <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
-                </AlertDescription>
-            </Alert>
-        )
-    }
-
-    return (
-        <>
-            <div className="mb-6 flex gap-2">
-                <Input
-                    type="search"
-                    placeholder="Поиск по названию, описанию или ключевым словам..."
-                    className="flex-grow"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                 <Button type="button" variant="secondary">
-                    <Search className="mr-2 h-4 w-4" /> Поиск
-                </Button>
-            </div>
-            
-            {filteredVideos.length === 0 && (
-                 <div className="text-center py-16 border-2 border-dashed rounded-lg bg-muted/50">
-                    <h3 className="text-xl font-semibold text-foreground">{searchQuery ? 'Ничего не найдено' : 'Нет опубликованных видео'}</h3>
-                    <p className="text-muted-foreground mt-2">{searchQuery ? 'Попробуйте изменить поисковый запрос.' : 'После одобрения они появятся здесь.'}</p>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(filteredVideos as Video[]).map((video) => {
-                    const videoId = getYouTubeId(video.filePath);
-                    const isMutating = mutatingId === video.id;
-                    return (
-                        <Card key={video.id}>
-                            <CardHeader>
-                                <CardTitle className="truncate">{video.title}</CardTitle>
-                                {video.description && <CardDescription className="line-clamp-3">{video.description}</CardDescription>}
-                                {video.keywords && video.keywords.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 pt-2">
-                                        {video.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
-                                    </div>
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video"></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
-                            </CardContent>
-                            <CardFooter className="flex justify-end gap-2">
-                                <Button variant="outline" disabled={isMutating} onClick={() => setEditingVideo(video)}>
-                                    <Pencil className="mr-2 h-4 w-4" />Редактировать
-                                </Button>
-                                <Button variant="destructive" onClick={() => handleDelete(video)} disabled={isMutating}>
-                                    {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                    Удалить
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    )
-                })}
-            </div>
-
-            {editingVideo && (
-                 <Dialog open={!!editingVideo} onOpenChange={(isOpen) => !isOpen && setEditingVideo(null)}>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                            <DialogTitle>Редактировать видео</DialogTitle>
-                            <DialogDescription>Внесите изменения в название, описание или ключевые слова видео.</DialogDescription>
-                        </DialogHeader>
-                        <EditVideoForm video={editingVideo} onFinish={() => setEditingVideo(null)} />
-                    </DialogContent>
-                </Dialog>
-            )}
-        </>
-    );
-}
-
 
 function PendingVideosList() {
     const firestore = useFirestore();
@@ -896,16 +615,12 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
-            <TabsTrigger value="management">Управление</TabsTrigger>
             <TabsTrigger value="appearance">Внешний вид</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
-        </TabsContent>
-        <TabsContent value="management" className="mt-6">
-            <PublicVideosList />
         </TabsContent>
         <TabsContent value="appearance" className="mt-6">
             <AppearanceSettings />
