@@ -23,25 +23,29 @@ async function ThemeLoader() {
     const themeDoc = await getDoc(themeDocRef);
     if (themeDoc.exists()) {
       const theme = themeDoc.data();
-      // Important: Ensure fallback values don't break CSS if a theme value is missing.
+      // Build the style string with all theme properties
       const style = `
-        :root {
+        :root, .dark {
           ${theme.background ? `--background: ${theme.background};` : ''}
           ${theme.foreground ? `--foreground: ${theme.foreground};` : ''}
+          ${theme.card ? `--card: ${theme.card};` : ''}
+          ${theme.cardForeground ? `--card-foreground: ${theme.cardForeground};` : ''}
+          ${theme.popover ? `--popover: ${theme.popover};` : ''}
+          ${theme.popoverForeground ? `--popover-foreground: ${theme.popoverForeground};` : ''}
           ${theme.primary ? `--primary: ${theme.primary};` : ''}
+          ${theme.primaryForeground ? `--primary-foreground: ${theme.primaryForeground};` : ''}
+          ${theme.secondary ? `--secondary: ${theme.secondary};` : ''}
+          ${theme.secondaryForeground ? `--secondary-foreground: ${theme.secondaryForeground};` : ''}
+          ${theme.muted ? `--muted: ${theme.muted};` : ''}
+          ${theme.mutedForeground ? `--muted-foreground: ${theme.mutedForeground};` : ''}
           ${theme.accent ? `--accent: ${theme.accent};` : ''}
+          ${theme.accentForeground ? `--accent-foreground: ${theme.accentForeground};` : ''}
+          ${theme.border ? `--border: ${theme.border};` : ''}
+          ${theme.input ? `--input: ${theme.input};` : ''}
+          ${theme.ring ? `--ring: ${theme.ring};` : ''}
           ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
           ${theme.mainImageUrl ? `--main-image-url: url(${theme.mainImageUrl});` : ''}
           ${theme.footerImageUrl ? `--footer-image-url: url(${theme.footerImageUrl});` : ''}
-        }
-        .dark {
-           ${theme.background ? `--background: ${theme.background};` : ''}
-           ${theme.foreground ? `--foreground: ${theme.foreground};` : ''}
-           ${theme.primary ? `--primary: ${theme.primary};` : ''}
-           ${theme.accent ? `--accent: ${theme.accent};` : ''}
-           ${theme.headerImageUrl ? `--header-image-url: url(${theme.headerImageUrl});` : ''}
-           ${theme.mainImageUrl ? `--main-image-url: url(${theme.mainImageUrl});` : ''}
-           ${theme.footerImageUrl ? `--footer-image-url: url(${theme.footerImageUrl});` : ''}
         }
       `;
       return <style>{style}</style>;

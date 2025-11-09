@@ -463,11 +463,24 @@ function PendingVideosList() {
     );
 }
 
+const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.');
 const appearanceFormSchema = z.object({
-  primary: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
-  background: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
-  accent: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
-  foreground: z.string().regex(/^#[0-9a-f]{6}$/i, 'Неверный HEX формат.'),
+  primaryHex: hexColor,
+  backgroundHex: hexColor,
+  accentHex: hexColor,
+  foregroundHex: hexColor,
+  cardHex: hexColor,
+  cardForegroundHex: hexColor,
+  popoverHex: hexColor,
+  popoverForegroundHex: hexColor,
+  secondaryHex: hexColor,
+  secondaryForegroundHex: hexColor,
+  mutedHex: hexColor,
+  mutedForegroundHex: hexColor,
+  accentForegroundHex: hexColor,
+  borderHex: hexColor,
+  inputHex: hexColor,
+  ringHex: hexColor,
   headerImageUrl: z.string().url().optional().or(z.literal('')),
   mainImageUrl: z.string().url().optional().or(z.literal('')),
   footerImageUrl: z.string().url().optional().or(z.literal('')),
@@ -489,30 +502,34 @@ function AppearanceSettings() {
 
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
-        values: {
-            primary: themeSettings?.primaryHex || '#8b5cf6',
-            background: themeSettings?.backgroundHex || '#111827',
-            accent: themeSettings?.accentHex || '#34d399',
-            foreground: themeSettings?.foregroundHex || '#f8fafc',
-            headerImageUrl: themeSettings?.headerImageUrl || '',
-            mainImageUrl: themeSettings?.mainImageUrl || '',
-            footerImageUrl: themeSettings?.footerImageUrl || '',
-        },
     });
 
-    useEffect(() => {
+     useEffect(() => {
         if (themeSettings) {
             form.reset({
-                primary: themeSettings.primaryHex || '#8b5cf6',
-                background: themeSettings.backgroundHex || '#111827',
-                accent: themeSettings.accentHex || '#34d399',
-                foreground: themeSettings.foregroundHex || '#f8fafc',
+                primaryHex: themeSettings.primaryHex || '#8b5cf6',
+                backgroundHex: themeSettings.backgroundHex || '#111827',
+                accentHex: themeSettings.accentHex || '#34d399',
+                foregroundHex: themeSettings.foregroundHex || '#f8fafc',
+                cardHex: themeSettings.cardHex || '#1f2937',
+                cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
+                popoverHex: themeSettings.popoverHex || '#111827',
+                popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
+                secondaryHex: themeSettings.secondaryHex || '#374151',
+                secondaryForegroundHex: themeSettings.secondaryForegroundHex || '#f9fafb',
+                mutedHex: themeSettings.mutedHex || '#374151',
+                mutedForegroundHex: themeSettings.mutedForegroundHex || '#9ca3af',
+                accentForegroundHex: themeSettings.accentForegroundHex || '#111827',
+                borderHex: themeSettings.borderHex || '#374151',
+                inputHex: themeSettings.inputHex || '#374151',
+                ringHex: themeSettings.ringHex || '#8b5cf6',
                 headerImageUrl: themeSettings.headerImageUrl || '',
                 mainImageUrl: themeSettings.mainImageUrl || '',
                 footerImageUrl: themeSettings.footerImageUrl || '',
             });
         }
     }, [themeSettings, form]);
+
 
     const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
         const storage = getStorage();
@@ -536,14 +553,24 @@ function AppearanceSettings() {
         setIsSubmitting(true);
         
         const themeData = {
-            primary: hexToHsl(values.primary),
-            background: hexToHsl(values.background),
-            accent: hexToHsl(values.accent),
-            foreground: hexToHsl(values.foreground),
-            primaryHex: values.primary,
-            backgroundHex: values.background,
-            accentHex: values.accent,
-            foregroundHex: values.foreground,
+            background: hexToHsl(values.backgroundHex),
+            foreground: hexToHsl(values.foregroundHex),
+            card: hexToHsl(values.cardHex),
+            cardForeground: hexToHsl(values.cardForegroundHex),
+            popover: hexToHsl(values.popoverHex),
+            popoverForeground: hexToHsl(values.popoverForegroundHex),
+            primary: hexToHsl(values.primaryHex),
+            primaryForeground: hexToHsl(values.primaryForegroundHex),
+            secondary: hexToHsl(values.secondaryHex),
+            secondaryForeground: hexToHsl(values.secondaryForegroundHex),
+            muted: hexToHsl(values.mutedHex),
+            mutedForeground: hexToHsl(values.mutedForegroundHex),
+            accent: hexToHsl(values.accentHex),
+            accentForeground: hexToHsl(values.accentForegroundHex),
+            border: hexToHsl(values.borderHex),
+            input: hexToHsl(values.inputHex),
+            ring: hexToHsl(values.ringHex),
+            ...values, // This includes all the ...Hex values
             headerImageUrl: values.headerImageUrl,
             mainImageUrl: values.mainImageUrl,
             footerImageUrl: values.footerImageUrl,
@@ -644,7 +671,7 @@ function AppearanceSettings() {
         )
     }
 
-    const ColorPickerInput = ({ name, label }: { name: 'primary' | 'background' | 'accent' | 'foreground', label: string }) => (
+    const ColorPickerInput = ({ name, label }: { name: keyof z.infer<typeof appearanceFormSchema>, label: string }) => (
         <FormField
             control={form.control}
             name={name}
@@ -653,12 +680,12 @@ function AppearanceSettings() {
                     <FormLabel>{label}</FormLabel>
                     <FormControl>
                             <div className="relative">
-                            <Input {...field} disabled={isSubmitting} className="pr-12" />
+                            <Input {...field} disabled={isSubmitting} className="pr-12" value={field.value || ''}/>
                             <Controller
                                 name={name}
                                 control={form.control}
                                 render={({ field: { onChange, value } }) => (
-                                    <input type="color" value={value} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
+                                    <input type="color" value={value || '#000000'} onChange={onChange} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-10 p-1 rounded-md cursor-pointer border bg-card" />
                                 )}
                             />
                         </div>
@@ -675,21 +702,53 @@ function AppearanceSettings() {
             <CardHeader>
                 <CardTitle>Внешний вид</CardTitle>
                 <CardDescription>
-                    Настройте цветовую схему и фоновые изображения для сайта.
+                    Настройте цветовую схему и фоновые изображения для всего сайта.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                        <div>
-                             <h3 className="text-lg font-medium mb-4">Цветовая схема</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <ColorPickerInput name="primary" label="Основной" />
-                                <ColorPickerInput name="foreground" label="Текст" />
-                                <ColorPickerInput name="background" label="Фон" />
-                                <ColorPickerInput name="accent" label="Акцент" />
+                         <div>
+                             <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <ColorPickerInput name="primaryHex" label="Основной" />
+                                <ColorPickerInput name="primaryForegroundHex" label="Текст на основном" />
+                                <ColorPickerInput name="secondaryHex" label="Вторичный" />
+                                <ColorPickerInput name="secondaryForegroundHex" label="Текст на вторичном" />
+                                <ColorPickerInput name="accentHex" label="Акцент" />
+                                <ColorPickerInput name="accentForegroundHex" label="Текст на акценте" />
+                                <ColorPickerInput name="destructive" label="Ошибки / Удаление" />
+                                <ColorPickerInput name="destructiveForeground" label="Текст на ошибках" />
                              </div>
                         </div>
+
+                        <Separator />
+
+                        <div>
+                             <h3 className="text-lg font-medium mb-4">Фон и текст</h3>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <ColorPickerInput name="backgroundHex" label="Фон сайта" />
+                                <ColorPickerInput name="foregroundHex" label="Основной текст" />
+                                <ColorPickerInput name="mutedHex" label="Приглушенный фон" />
+                                <ColorPickerInput name="mutedForegroundHex" label="Приглушенный текст" />
+                              </div>
+                        </div>
+                        
+                        <Separator />
+                        
+                         <div>
+                             <h3 className="text-lg font-medium mb-4">Компоненты</h3>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <ColorPickerInput name="cardHex" label="Фон карточки" />
+                                <ColorPickerInput name="cardForegroundHex" label="Текст на карточке" />
+                                <ColorPickerInput name="popoverHex" label="Фон поповера" />
+                                <ColorPickerInput name="popoverForegroundHex" label="Текст на поповере" />
+                                <ColorPickerInput name="borderHex" label="Рамки" />
+                                <ColorPickerInput name="inputHex" label="Поля ввода" />
+                                <ColorPickerInput name="ringHex" label="Кольцо фокуса" />
+                              </div>
+                        </div>
+
 
                         <Separator />
 

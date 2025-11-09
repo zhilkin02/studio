@@ -94,52 +94,47 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Theme Settings",
       "type": "object",
-      "description": "Stores site-wide appearance settings.",
+      "description": "Stores site-wide appearance settings for all UI elements.",
       "properties": {
-        "primary": {
-          "type": "string",
-          "description": "Primary color in HSL format (e.g., '262 80% 60%')."
-        },
-        "background": {
-          "type": "string",
-          "description": "Background color in HSL format (e.g., '240 5% 8%')."
-        },
-        "accent": {
-          "type": "string",
-          "description": "Accent color in HSL format (e.g., '190 95% 55%')."
-        },
-        "foreground": {
-          "type": "string",
-          "description": "Foreground (text) color in HSL format (e.g., '0 0% 98%')."
-        },
-        "primaryHex": {
-            "type": "string",
-            "description": "Primary color in HEX format for the color picker (e.g., '#8b5cf6')."
-        },
-        "backgroundHex": {
-            "type": "string",
-            "description": "Background color in HEX format for the color picker (e.g., '#111827')."
-        },
-        "accentHex": {
-            "type": "string",
-            "description": "Accent color in HEX format for the color picker (e.g., '#34d399')."
-        },
-        "foregroundHex": {
-            "type": "string",
-            "description": "Foreground (text) color in HEX format for the color picker (e.g., '#f8fafc')."
-        },
-        "headerImageUrl": {
-            "type": "string",
-            "description": "URL for the header background image."
-        },
-        "mainImageUrl": {
-            "type": "string",
-            "description": "URL for the main content background image."
-        },
-        "footerImageUrl": {
-            "type": "string",
-            "description": "URL for the footer background image."
-        }
+        "background": { "type": "string", "description": "Background color in HSL format (e.g., '240 5% 8%')." },
+        "foreground": { "type": "string", "description": "Foreground (text) color in HSL format (e.g., '0 0% 98%')." },
+        "card": { "type": "string", "description": "Card background color in HSL format." },
+        "cardForeground": { "type": "string", "description": "Card foreground color in HSL format." },
+        "popover": { "type": "string", "description": "Popover background color in HSL format." },
+        "popoverForeground": { "type": "string", "description": "Popover foreground color in HSL format." },
+        "primary": { "type": "string", "description": "Primary color for buttons and highlights in HSL format." },
+        "primaryForeground": { "type": "string", "description": "Foreground color for primary elements in HSL format." },
+        "secondary": { "type": "string", "description": "Secondary color in HSL format." },
+        "secondaryForeground": { "type": "string", "description": "Foreground color for secondary elements in HSL format." },
+        "muted": { "type": "string", "description": "Muted color for less prominent elements in HSL format." },
+        "mutedForeground": { "type": "string", "description": "Foreground color for muted elements in HSL format." },
+        "accent": { "type": "string", "description": "Accent color in HSL format." },
+        "accentForeground": { "type": "string", "description": "Foreground color for accent elements in HSL format." },
+        "border": { "type": "string", "description": "Color for borders in HSL format." },
+        "input": { "type": "string", "description": "Color for input fields in HSL format." },
+        "ring": { "type": "string", "description": "Color for focus rings in HSL format." },
+
+        "backgroundHex": { "type": "string", "description": "Background color in HEX format." },
+        "foregroundHex": { "type": "string", "description": "Foreground color in HEX format." },
+        "cardHex": { "type": "string", "description": "Card background color in HEX format." },
+        "cardForegroundHex": { "type": "string", "description": "Card foreground color in HEX format." },
+        "popoverHex": { "type": "string", "description": "Popover background color in HEX format." },
+        "popoverForegroundHex": { "type": "string", "description": "Popover foreground color in HEX format." },
+        "primaryHex": { "type": "string", "description": "Primary color in HEX format." },
+        "primaryForegroundHex": { "type": "string", "description": "Primary foreground color in HEX format." },
+        "secondaryHex": { "type": "string", "description": "Secondary color in HEX format." },
+        "secondaryForegroundHex": { "type": "string", "description": "Secondary foreground color in HEX format." },
+        "mutedHex": { "type": "string", "description": "Muted color in HEX format." },
+        "mutedForegroundHex": { "type": "string", "description": "Muted foreground color in HEX format." },
+        "accentHex": { "type": "string", "description": "Accent color in HEX format." },
+        "accentForegroundHex": { "type": "string", "description": "Accent foreground color in HEX format." },
+        "borderHex": { "type": "string", "description": "Border color in HEX format." },
+        "inputHex": { "type": "string", "description": "Input color in HEX format." },
+        "ringHex": { "type": "string", "description": "Ring color in HEX format." },
+
+        "headerImageUrl": { "type": "string", "description": "URL for the header background image." },
+        "mainImageUrl": { "type": "string", "description": "URL for the main content background image." },
+        "footerImageUrl": { "type": "string", "description": "URL for the footer background image." }
       }
     }
   },

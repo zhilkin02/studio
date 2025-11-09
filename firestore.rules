@@ -1,4 +1,6 @@
 rules_version = '2';
+
+// --- Firestore Rules ---
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -63,13 +65,24 @@ service cloud.firestore {
   }
 }
 
+// --- Storage Rules ---
 service firebase.storage {
   match /b/{bucket}/o {
-    // Only admins can write to the 'theme/' directory.
-    // Anyone can read the files in the 'theme/' directory.
+    // Rule for the theme directory
     match /theme/{allPaths=**} {
+      // Anyone can read images from the theme directory.
       allow read: if true;
-      allow write: if request.auth != null && exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
+      
+      // Only authenticated users who have an admin role document in Firestore can write.
+      // This rule is self-contained and does not depend on Firestore helper functions.
+      allow write: if request.auth != null && 
+                      exists(/databases/(default)/documents/roles_admin/$(request.auth.uid));
+    }
+
+     // Rule for any other path in storage (optional, for future use)
+    match /{allPaths=**} {
+        // Default deny all other operations if not explicitly allowed.
+        allow read, write: if false;
     }
   }
 }
