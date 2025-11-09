@@ -28,10 +28,10 @@ service cloud.firestore {
     }
     
     // --- Pending Content for Admin Review ---
-    // Any user (signed in or anonymous) can create a pending video.
+    // Any signed-in user can create a pending video.
     // Only admins can see the full list, or approve/reject (update/delete).
     match /pendingVideoFragments/{videoId} {
-      allow create: if true;
+      allow create: if isSignedIn();
       allow read, update, delete: if isAdmin();
     }
 
@@ -39,7 +39,7 @@ service cloud.firestore {
     // A user can check if they are an admin (get their own role doc).
     // Only other admins can view the full list or change admin roles.
     match /roles_admin/{userId} {
-      allow get: if isOwner(userId);
+      allow read: if isOwner(userId);
       allow list, create, update, delete: if isAdmin();
     }
     
