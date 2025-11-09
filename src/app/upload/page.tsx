@@ -27,27 +27,6 @@ const formSchema = z.object({
   keywords: z.string().optional(),
 });
 
-function getQuotaResetTime() {
-    const now = new Date();
-    // YouTube quota resets at midnight Pacific Time.
-    // We can approximate this by setting a UTC date for tomorrow at 8:00 (since 00:00 PST is 08:00 UTC).
-    // This handles Daylight Saving Time for PT automatically.
-    const resetTime = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    resetTime.setUTCHours(8, 0, 0, 0);
-
-    if (now.getTime() > resetTime.getTime()) {
-      // If it's already past midnight PT today, the next reset is tomorrow.
-      resetTime.setUTCDate(resetTime.getUTCDate() + 1);
-    }
-
-    const diff = resetTime.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return { hours, minutes };
-}
-
-
 export default function UploadPage() {
   const { user, loading } = useUser();
   const router = useRouter();
@@ -58,7 +37,6 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0); 
   const [uploadMessage, setUploadMessage] = useState('');
   const [quotaExceeded, setQuotaExceeded] = useState(false);
-  const [quotaReset, setQuotaReset] = useState({hours: 0, minutes: 0});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -66,17 +44,6 @@ export default function UploadPage() {
     }
   }, [user, loading, router]);
   
-  useEffect(() => {
-    if (quotaExceeded) {
-       setQuotaReset(getQuotaResetTime());
-       const interval = setInterval(() => {
-            setQuotaReset(getQuotaResetTime());
-       }, 60000); // Update every minute
-       return () => clearInterval(interval);
-    }
-  }, [quotaExceeded]);
-
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -136,6 +103,11 @@ export default function UploadPage() {
                 setUploadProgress(0);
                 setUploadMessage('');
                 setIsSubmitting(false);
+                toast({
+                    variant: "destructive",
+                    title: "Достигнут лимит загрузок YouTube",
+                    description: "Суточный лимит на загрузку видео исчерпан. Пожалуйста, попробуйте снова позже."
+                });
                 return;
             }
 
@@ -198,6 +170,7 @@ export default function UploadPage() {
             setUploadProgress(0);
             setUploadMessage('');
         } finally {
+            // We keep the submit button disabled if quota is exceeded
             if(!quotaExceeded) setIsSubmitting(false);
         }
     };
@@ -263,7 +236,7 @@ export default function UploadPage() {
                         <Timer className="h-4 w-4" />
                         <AlertTitle>Достигнут лимит загрузок YouTube</AlertTitle>
                         <AlertDescription>
-                            Квота сбрасывается в полночь по тихоокеанскому времени (PST). Вы сможете снова загружать видео примерно через <b>{quotaReset.hours} ч. {quotaReset.minutes} мин.</b>
+                            Суточный лимит на загрузку видео исчерпан. Пожалуйста, попробуйте снова позже.
                         </AlertDescription>
                     </Alert>
                 )}

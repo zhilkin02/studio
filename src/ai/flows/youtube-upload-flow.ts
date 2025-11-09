@@ -95,8 +95,8 @@ const uploadVideoFlow = ai.defineFlow(
             
             if (!sessionResponse.ok) {
                  const errorText = await sessionResponse.text();
-                 if (errorText.includes('uploadLimitExceeded') || errorText.includes('exceeded the number of videos')) {
-                    return { error: "Суточный лимит загрузки видео на YouTube исчерпан.", quotaExceeded: true };
+                 if (errorText.includes('uploadLimitExceeded') || errorText.includes('exceeded the number of videos') || errorText.includes('quotaExceeded')) {
+                    return { error: "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова позже.", quotaExceeded: true };
                  }
                  if (errorText.includes('invalid_client')) {
                     return { error: "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local." };
