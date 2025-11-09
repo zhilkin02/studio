@@ -25,9 +25,9 @@ async function getAccessToken() {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: REFRESH_TOKEN,
+      client_id: "715036389581-ok3ottibrbnjvfvut1ggegnsbpo30ijt.apps.googleusercontent.com",
+      client_secret: "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",
+      refresh_token: "1//04A0nP3ylt28dCgYIARAAGAQSNwF-L9IrR5kFZ2rF1CFizsCcsrwLtyyRf-qaih3yRkVdsJl0zfwlM_EEU4MvjhajSZB5uygvXOI",
       grant_type: 'refresh_token',
     }),
   });
