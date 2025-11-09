@@ -113,7 +113,15 @@ export default function UploadPage() {
                 uploadDate: serverTimestamp(),
             };
 
-            const docRef = await addDoc(pendingCollectionRef, docData);
+            addDoc(pendingCollectionRef, docData).catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: pendingCollectionRef.path,
+                    operation: 'create',
+                    requestResourceData: docData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: 'destructive', title: 'Ошибка сохранения в БД', description: serverError.message });
+            });
 
             setUploadProgress(100);
             setUploadMessage("Готово!");

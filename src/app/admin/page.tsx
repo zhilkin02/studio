@@ -20,7 +20,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 // Helper to extract YouTube video ID from URL
@@ -70,27 +72,36 @@ function EditVideoForm({ video, onFinish }: { video: Video, onFinish: () => void
         if (!firestore) return;
         setIsSubmitting(true);
 
-        try {
-            const docRef = doc(firestore, 'publicVideoFragments', video.id);
-            await updateDoc(docRef, {
-                title: values.title,
-                description: values.description,
+        const docRef = doc(firestore, 'publicVideoFragments', video.id);
+        const data = {
+            title: values.title,
+            description: values.description,
+        };
+
+        updateDoc(docRef, data)
+            .then(() => {
+                toast({
+                    title: "Видео обновлено!",
+                    description: "Изменения были успешно сохранены.",
+                });
+                onFinish();
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'update',
+                    requestResourceData: data,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: "destructive",
+                    title: "Ошибка обновления",
+                    description: serverError.message || "Не удалось сохранить изменения.",
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-            toast({
-                title: "Видео обновлено!",
-                description: "Изменения были успешно сохранены.",
-            });
-            onFinish();
-        } catch (e: any) {
-            console.error("Error updating video:", e);
-            toast({
-                variant: "destructive",
-                title: "Ошибка обновления",
-                description: e.message || "Не удалось сохранить изменения.",
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
     }
 
     return (
@@ -168,7 +179,16 @@ function PublicVideosList() {
             }
 
             toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
-            await deleteDoc(doc(firestore, 'publicVideoFragments', video.id));
+            const docRef = doc(firestore, 'publicVideoFragments', video.id);
+            
+            deleteDoc(docRef).catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'delete',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                 toast({ variant: "destructive", title: "Ошибка удаления из БД", description: serverError.message });
+            });
 
             toast({ title: "Видео удалено", description: `"${video.title}" было полностью удалено.` });
 
@@ -287,16 +307,16 @@ function PendingVideosList() {
 
             batch.set(publicDocRef, { ...videoData, status: 'approved' });
             batch.delete(pendingDocRef);
+
             await batch.commit();
 
             toast({
                 title: "Видео одобрено!",
                 description: `"${video.title}" теперь доступно для всех.`,
             });
-            // No need for optimistic update, listener will handle it
         } catch (e: any) {
             console.error("Error approving video:", e);
-            toast({
+             toast({
                 variant: "destructive",
                 title: "Ошибка одобрения",
                 description: e.message,
@@ -326,7 +346,16 @@ function PendingVideosList() {
             }
             
             toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
-            await deleteDoc(doc(firestore, 'pendingVideoFragments', video.id));
+            
+            const docRef = doc(firestore, 'pendingVideoFragments', video.id);
+            deleteDoc(docRef).catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: docRef.path,
+                    operation: 'delete',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: "destructive", title: "Ошибка отклонения", description: serverError.message });
+            });
 
             toast({ title: "Видео отклонено и удалено", description: `"${video.title}" было полностью удалено.` });
 
@@ -443,22 +472,30 @@ function AppearanceSettings() {
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
         if (!themeDocRef) return;
         setIsSubmitting(true);
-        try {
-            await setDoc(themeDocRef, values, { merge: true });
-            toast({
-                title: "Настройки сохранены",
-                description: "Внешний вид сайта был успешно обновлен.",
+        
+        setDoc(themeDocRef, values, { merge: true })
+            .then(() => {
+                 toast({
+                    title: "Настройки сохранены",
+                    description: "Внешний вид сайта был успешно обновлен.",
+                });
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: themeDocRef.path,
+                    operation: 'write',
+                    requestResourceData: values,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: "destructive",
+                    title: "Ошибка сохранения",
+                    description: "Не удалось сохранить настройки темы. Проверьте права доступа в консоли Firebase.",
+                });
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
-        } catch (e: any) {
-            console.error("Error saving theme settings:", e);
-            toast({
-                variant: "destructive",
-                title: "Ошибка сохранения",
-                description: e.message || "Не удалось сохранить настройки темы.",
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
     }
 
     if (loading) {
