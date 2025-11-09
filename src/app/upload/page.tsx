@@ -1,7 +1,7 @@
 'use client';
 import { useUser } from '@/firebase/auth/use-user';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,7 +26,7 @@ const formSchema = z.object({
 });
 
 export default function UploadPage() {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -34,6 +34,13 @@ export default function UploadPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0); 
   const [uploadMessage, setUploadMessage] = useState('');
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,8 +66,8 @@ export default function UploadPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!firestore) {
-      toast({ variant: "destructive", title: "Ошибка", description: "База данных недоступна." });
+    if (!firestore || !user) {
+      toast({ variant: "destructive", title: "Ошибка", description: "База данных или пользователь недоступны." });
       return;
     }
     if (!videoFile) {
@@ -99,7 +106,7 @@ export default function UploadPage() {
                 title: values.title,
                 description: values.description,
                 filePath: youtubeUrl,
-                uploaderId: user?.uid ?? 'anonymous',
+                uploaderId: user.uid,
                 status: 'pending',
                 uploadDate: serverTimestamp(),
             };
@@ -153,6 +160,15 @@ export default function UploadPage() {
         setUploadMessage('');
         setIsSubmitting(false);
     }
+  }
+  
+  if (loading || !user) {
+    return (
+        <div className="flex justify-center items-center min-h-[calc(100vh-12rem)]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
+            <p className="ml-4 text-muted-foreground">Загрузка...</p>
+        </div>
+    );
   }
 
   return (
