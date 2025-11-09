@@ -10,7 +10,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil, Code } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -25,6 +25,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import Link from 'next/link';
 
 
 function hexToHsl(hex: string): string | null {
@@ -479,7 +480,7 @@ const appearanceFormSchema = z.object({
   ringHex: hexColor,
   primaryForegroundHex: hexColor,
   secondaryForegroundHex: hexColor,
-accentForegroundHex: hexColor,
+  accentForegroundHex: hexColor,
   mutedForegroundHex: hexColor,
   destructiveForegroundHex: hexColor,
   cardForegroundHex: hexColor,
@@ -840,10 +841,11 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
             <TabsTrigger value="management">Управление</TabsTrigger>
             <TabsTrigger value="appearance">Внешний вид</TabsTrigger>
+            <TabsTrigger value="custom_code">Код</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
@@ -854,9 +856,25 @@ export default function AdminPage() {
         <TabsContent value="appearance" className="mt-6">
             <AppearanceSettings />
         </TabsContent>
+         <TabsContent value="custom_code" className="mt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Пользовательский код</CardTitle>
+                    <CardDescription>
+                        Измените HTML и CSS для специальной страницы.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Button asChild>
+                        <Link href="/custom-code">
+                           <Code className="mr-2 h-4 w-4" />
+                            Перейти в редактор
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-    

@@ -113,6 +113,8 @@
         "border": { "type": "string", "description": "Color for borders in HSL format." },
         "input": { "type": "string", "description": "Color for input fields in HSL format." },
         "ring": { "type": "string", "description": "Color for focus rings in HSL format." },
+        "destructive": { "type": "string", "description": "Color for destructive actions in HSL format." },
+        "destructiveForeground": { "type": "string", "description": "Foreground color for destructive actions in HSL format." },
         "backgroundHex": { "type": "string", "description": "Background color in HEX format." },
         "foregroundHex": { "type": "string", "description": "Foreground color in HEX format." },
         "cardHex": { "type": "string", "description": "Card background color in HEX format." },
@@ -129,7 +131,25 @@
         "accentForegroundHex": { "type": "string", "description": "Accent foreground color in HEX format." },
         "borderHex": { "type": "string", "description": "Border color in HEX format." },
         "inputHex": { "type": "string", "description": "Input color in HEX format." },
-        "ringHex": { "type": "string", "description": "Ring color in HEX format." }
+        "ringHex": { "type": "string", "description": "Ring color in HEX format." },
+        "destructiveHex": { "type": "string", "description": "Destructive color in HEX format." },
+        "destructiveForegroundHex": { "type": "string", "description": "Destructive foreground color in HEX format." }
+      }
+    },
+    "CustomPage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Custom Page",
+      "type": "object",
+      "description": "Stores custom HTML and CSS content for a specific page.",
+      "properties": {
+        "html": {
+          "type": "string",
+          "description": "The raw HTML content for the page."
+        },
+        "css": {
+          "type": "string",
+          "description": "The raw CSS content for the page."
+        }
       }
     }
   },
@@ -235,10 +255,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/customPages/{pageId}",
+        "definition": {
+          "entityName": "CustomPage",
+          "schema": {
+            "$ref": "#/backend/entities/CustomPage"
+          },
+          "description": "Stores custom HTML and CSS for user-defined pages. Document ID 'main' is used for the primary custom page. Publicly readable, admin writable.",
+          "params": [
+            {
+              "name": "pageId",
+              "description": "The unique identifier for the custom page, e.g., 'main'."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Konk Media Archive application, focusing on authorization independence and clear access control. Key considerations are admin role management and video fragment approval workflows.\n\n**Authorization Independence:**\n\n*   Admin role: The presence of a document in the `/roles_admin/{uid}` collection grants admin privileges. This eliminates the need to read user documents to determine admin status. This also enables atomic admin role assignment.\n*   Video fragment ownership: The `uploaderId` field within the `/videoFragments/{videoId}` documents denormalizes the user ID. Security rules can then use `request.auth.uid` and `resource.data.uploaderId` to enforce ownership without additional `get()` calls.\n\n**QAPs (Rules Are Not Filters):**\n\n*   Segregation for video fragment status: Approved videos are stored in `/videoFragments`, while pending videos are stored in `/pendingVideoFragments`. This segregation allows listing approved videos without filtering for status. Admins can manage pending videos in `/pendingVideoFragments`.\n*   Public Data: A dedicated `/publicVideoFragments` collection is used to serve content to all users, including unauthenticated ones. This separates public data from internal or protected data, simplifying security rules.\n\n*   Admin Role Management: Authorization for admin actions (like approving videos) relies on the existence of a document in `/roles_admin/{uid}`. This makes admin authorization explicit and efficient.\n*  Site-wide Settings: A `/site_settings` collection with a single document for the theme allows global appearance settings to be managed by admins and read by all users, without granting write access to non-admins."
   }
 }
-
-    
