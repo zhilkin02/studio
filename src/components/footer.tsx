@@ -10,8 +10,8 @@ export function Footer() {
           docPath="site_content/main"
           fieldKey="footer_text"
           defaultValue={`© ${currentYear} Коротко О Не Коротком (КоНК). Все права защищены.`}
-          render={(text) => <p>{text}</p>}
-          textarea={false}
+          render={(text) => <p className="whitespace-pre-wrap">{text}</p>}
+          textarea={true}
           className="relative"
         />
       </div>

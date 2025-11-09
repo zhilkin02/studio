@@ -141,14 +141,14 @@ export default function Home() {
               docPath="site_content/main"
               fieldKey="home_title"
               defaultValue="Коротко О Не Коротком"
-              render={(text) => <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">{text}</h1>}
-              textarea={false}
+              render={(text) => <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 whitespace-pre-wrap">{text}</h1>}
+              textarea={true}
             />
             <EditableText
               docPath="site_content/main"
               fieldKey="home_subtitle"
               defaultValue="Найдите идеальный фрагмент из фильма или сериала за секунды."
-              render={(text) => <p className="text-lg md:text-xl text-muted-foreground mb-8">{text}</p>}
+              render={(text) => <p className="text-lg md:text-xl text-muted-foreground mb-8 whitespace-pre-wrap">{text}</p>}
               textarea={true}
             />
         </section>
@@ -173,5 +173,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

@@ -125,8 +125,8 @@ export function Header() {
             docPath="site_content/main"
             fieldKey="header_title"
             defaultValue="КоНК"
-            render={(text) => <span>{text}</span>}
-            textarea={false}
+            render={(text) => <span className="whitespace-pre-wrap">{text}</span>}
+            textarea={true}
           />
         </Link>
         <div className="flex items-center gap-4">
