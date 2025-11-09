@@ -20,6 +20,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemo } from 'react';
 import { collection } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
+import { EditableText } from '@/components/editable-text';
 
 
 function AuthButtons() {
@@ -120,7 +121,13 @@ export function Header() {
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
           <Film className="h-6 w-6 text-accent" />
-          <span>КоНК</span>
+          <EditableText
+            docPath="site_content/main"
+            fieldKey="header_title"
+            defaultValue="КоНК"
+            render={(text) => <span>{text}</span>}
+            textarea={false}
+          />
         </Link>
         <div className="flex items-center gap-4">
            <Button asChild variant="outline">
