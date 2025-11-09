@@ -83,10 +83,14 @@ const uploadVideoFlow = ai.defineFlow(
       const buffer = Buffer.from(input.videoDataUri.split(',')[1], 'base64');
       
       console.log('Начало загрузки видео на YouTube (этап 1: создание сессии)...');
-      const uploadResponse = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable', {
+      
+      // ИЗМЕНЕНИЕ: Убираем токен из заголовка и добавляем в URL
+      const uploadUrl = `https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable&access_token=${accessToken}`;
+      
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          // 'Authorization': `Bearer ${accessToken}`, // УДАЛЕНО
           'Content-Type': 'application/json; charset=UTF-8',
           'X-Upload-Content-Type': 'video/*',
         },
@@ -111,7 +115,7 @@ const uploadVideoFlow = ai.defineFlow(
 
       console.log('Загрузка бинарных данных видео (этап 2)...');
       const uploadVideoResponse = await fetch(locationUrl, {
-          method: 'PUT', // Используем PUT для загрузки данных в resumable сессию
+          method: 'PUT',
           headers: {
               'Content-Type': 'video/*'
           },
@@ -143,7 +147,9 @@ const uploadVideoFlow = ai.defineFlow(
 
     } catch (err: any) {
       console.error('Подробная ошибка в потоке загрузки на YouTube:', err);
-      return { error: `Ошибка при загрузке на YouTube: ${err.message}` };
+      // Возвращаем исходное сообщение об ошибке, чтобы было понятнее
+      const originalMessage = err.message.startsWith('API') ? err.message.split(': ')[1] : err.message;
+      return { error: `Ошибка при загрузке на YouTube: ${originalMessage}` };
     }
   }
 );
