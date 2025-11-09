@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/button';
 import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { useFirestore, useFirebaseApp } from '@/firebase';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Trash2, Pencil, UploadCloud } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -480,24 +479,19 @@ const appearanceFormSchema = z.object({
   ringHex: hexColor,
   primaryForegroundHex: hexColor,
   secondaryForegroundHex: hexColor,
-  accentForegroundHex: hexColor,
+accentForegroundHex: hexColor,
   mutedForegroundHex: hexColor,
   destructiveForegroundHex: hexColor,
   cardForegroundHex: hexColor,
   popoverHex: hexColor,
   popoverForegroundHex: hexColor,
-  headerImageUrl: z.string().url().optional().or(z.literal('')),
-  mainImageUrl: z.string().url().optional().or(z.literal('')),
-  footerImageUrl: z.string().url().optional().or(z.literal('')),
 });
 
 
 function AppearanceSettings() {
     const firestore = useFirestore();
-    const app = useFirebaseApp();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [imageUploading, setImageUploading] = useState<string | null>(null);
     
     const themeDocRef = useMemo(() => {
         if (!firestore) return null;
@@ -532,9 +526,6 @@ function AppearanceSettings() {
                 cardForegroundHex: themeSettings.cardForegroundHex || '#f9fafb',
                 popoverHex: themeSettings.popoverHex || '#111827',
                 popoverForegroundHex: themeSettings.popoverForegroundHex || '#f9fafb',
-                headerImageUrl: themeSettings.headerImageUrl || 'https://firebasestorage.googleapis.com/v0/b/konk-media-archive.appspot.com/o/theme%2Fheader.png?alt=media&token=19148332-945b-4395-9430-845189304383',
-                mainImageUrl: themeSettings.mainImageUrl || '',
-                footerImageUrl: themeSettings.footerImageUrl || '',
             });
         }
     }, [themeSettings, form]);
@@ -562,29 +553,6 @@ function AppearanceSettings() {
         '--input': hexToHsl(watchedValues.inputHex ?? ''),
         '--ring': hexToHsl(watchedValues.ringHex ?? ''),
     } as React.CSSProperties;
-
-
-    const handleImageUpload = async (file: File, fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl') => {
-        if (!app) {
-            toast({ variant: 'destructive', title: 'Ошибка', description: 'Firebase не инициализирован.' });
-            return;
-        };
-        const storage = getStorage(app);
-        setImageUploading(fieldName);
-        const imageRef = storageRef(storage, `theme/${fieldName}_${Date.now()}_${file.name}`);
-        
-        try {
-            const snapshot = await uploadBytes(imageRef, file);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            form.setValue(fieldName, downloadURL, { shouldValidate: true, shouldDirty: true });
-            toast({ title: 'Изображение загружено', description: 'URL был добавлен в форму.' });
-        } catch (e: any) {
-             toast({ variant: 'destructive', title: 'Ошибка загрузки изображения', description: e.message });
-             console.error("Upload error:", e);
-        } finally {
-            setImageUploading(null);
-        }
-    }
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
         if (!themeDocRef) return;
@@ -672,42 +640,6 @@ function AppearanceSettings() {
             </Alert>
         )
     }
-
-    const ImageUploader = ({ fieldName, label }: { fieldName: 'headerImageUrl' | 'mainImageUrl' | 'footerImageUrl', label: string }) => {
-        const currentUrl = form.watch(fieldName);
-        return (
-             <FormItem>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                    <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors flex flex-col items-center justify-center min-h-[120px]">
-                       {currentUrl ? (
-                         <>
-                            <img src={currentUrl} alt={label} className="max-h-24 rounded-md mb-2 object-cover"/>
-                            <p className="text-xs text-muted-foreground truncate max-w-full">{currentUrl}</p>
-                             <Button variant="link" size="sm" className="mt-1 text-red-500" onClick={() => form.setValue(fieldName, '')}>Удалить</Button>
-                         </>
-                       ) : (
-                         <>
-                           {imageUploading === fieldName ? <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground"/> : <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground"/>}
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {imageUploading === fieldName ? 'Загрузка...' : 'Нажмите, чтобы выбрать файл'}
-                            </p>
-                         </>
-                       )}
-                      <Input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], fieldName)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        disabled={isSubmitting || !!imageUploading}
-                      />
-                    </div>
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-        )
-    }
-
     const ColorPickerInput = ({ name, label }: { name: keyof z.infer<typeof appearanceFormSchema>, label: string }) => (
         <FormField
             control={form.control}
@@ -739,7 +671,7 @@ function AppearanceSettings() {
             <CardHeader>
                 <CardTitle>Внешний вид</CardTitle>
                 <CardDescription>
-                    Настройте цветовую схему и фоновые изображения для всего сайта. Изменения сразу отобразятся в панели предпросмотра.
+                    Настройте цветовую схему для всего сайта. Изменения сразу отобразятся в панели предпросмотра.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -792,20 +724,9 @@ function AppearanceSettings() {
                                 </div>
                             </div>
 
-                            <Separator />
-
-                            <div>
-                                 <h3 className="text-lg font-medium mb-4">Фоновые изображения</h3>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <ImageUploader fieldName="headerImageUrl" label="Изображение шапки"/>
-                                    <ImageUploader fieldName="mainImageUrl" label="Изображение контента"/>
-                                    <ImageUploader fieldName="footerImageUrl" label="Изображение подвала"/>
-                                  </div>
-                            </div>
-
-                            <Button type="submit" disabled={isSubmitting || !!imageUploading}>
+                            <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {imageUploading ? 'Дождитесь загрузки...' : 'Сохранить изменения'}
+                                Сохранить изменения
                             </Button>
                         </div>
                         
@@ -937,3 +858,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    

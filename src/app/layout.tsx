@@ -45,9 +45,6 @@ async function ThemeLoader() {
         --border: ${theme.border || '240 5% 20%'};
         --input: ${theme.input || '240 5% 20%'};
         --ring: ${theme.ring || '262 80% 60%'};
-        --header-image-url: ${theme.headerImageUrl ? `url(${theme.headerImageUrl})` : 'url(https://firebasestorage.googleapis.com/v0/b/konk-media-archive.appspot.com/o/theme%2Fheader.png?alt=media&token=19148332-945b-4395-9430-845189304383)'};
-        --main-image-url: ${theme.mainImageUrl ? `url(${theme.mainImageUrl})` : 'none'};
-        --footer-image-url: ${theme.footerImageUrl ? `url(${theme.footerImageUrl})` : 'none'};
       }
     `;
     return <style>{style}</style>;
@@ -88,3 +85,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    
