@@ -35,13 +35,14 @@ const uploadVideoFlow = ai.defineFlow(
     },
     async (input) => {
         const { title, description, videoDataUri } = input;
-        const clientId = process.env.YOUTUBE_CLIENT_ID;
-        const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-        const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-        const apiKey = process.env.YOUTUBE_API_KEY;
+        // IMPORTANT: Replace with your actual credentials
+        const clientId = "YOUR_YOUTUBE_CLIENT_ID";
+        const clientSecret = "YOUR_YOUTUBE_CLIENT_SECRET";
+        const refreshToken = "YOUR_YOUTUBE_REFRESH_TOKEN";
+        const apiKey = "YOUR_YOUTUBE_API_KEY";
 
-        if (!clientId || !clientSecret || !refreshToken || !apiKey) {
-            return { error: 'Отсутствуют учетные данные YouTube в переменных окружения.' };
+        if (!clientId || !clientSecret || !refreshToken || !apiKey || clientId === "YOUR_YOUTUBE_CLIENT_ID") {
+             return { error: 'Отсутствуют или не заменены учетные данные YouTube.' };
         }
 
         try {
@@ -93,7 +94,14 @@ const uploadVideoFlow = ai.defineFlow(
             
             if (!sessionResponse.ok) {
                  const errorText = await sessionResponse.text();
-                 return { error: `Ошибка создания сессии загрузки: ${sessionResponse.status} ${sessionResponse.statusText}. ${errorText}` };
+                 let errorMessage = `Ошибка создания сессии загрузки: ${sessionResponse.status} ${sessionResponse.statusText}. ${errorText}`;
+                 if (errorText.includes('uploadLimitExceeded') || errorText.includes('exceeded the number of videos')) {
+                    errorMessage = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+                 }
+                 if (errorText.includes('invalid_client')) {
+                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные.";
+                 }
+                 return { error: errorMessage };
             }
 
             const uploadUrl = sessionResponse.headers.get('Location');

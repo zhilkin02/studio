@@ -98,7 +98,7 @@ export default function UploadPage() {
 
             if (!result || !result.videoId) {
                 let description = result.error || 'Не удалось получить ID видео от YouTube.';
-                if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
+                 if (typeof description === 'string' && (description.includes('uploadLimitExceeded') || description.includes('exceeded the number of videos'))) {
                     description = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
                 }
                  throw new Error(description);
@@ -116,48 +116,36 @@ export default function UploadPage() {
                 uploadDate: serverTimestamp(),
             };
 
-            addDoc(pendingCollectionRef, docData)
-              .then(() => {
-                setUploadProgress(100);
-                setUploadMessage("Готово!");
+            await addDoc(pendingCollectionRef, docData);
 
-                toast({
-                    title: "Успешно отправлено!",
-                    description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
-                    action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
-                });
-                
-                form.reset();
-                setVideoFile(null);
-                router.push('/');
-                setIsSubmitting(false);
-              })
-              .catch(serverError => {
-                const permissionError = new FirestorePermissionError({
-                    path: pendingCollectionRef.path,
-                    operation: 'create',
-                    requestResourceData: docData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
+            setUploadProgress(100);
+            setUploadMessage("Готово!");
 
-                toast({
-                    variant: "destructive",
-                    title: "Ошибка прав доступа",
-                    description: 'Не удалось сохранить данные. Проверьте консоль для деталей.',
-                });
-                setUploadProgress(0);
-                setUploadMessage('');
-                setIsSubmitting(false);
-              });
+            toast({
+                title: "Успешно отправлено!",
+                description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
+                action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
+            });
+            
+            form.reset();
+            setVideoFile(null);
+            router.push('/');
+
         } catch (e: any) {
             console.error("Error in upload process:", e);
+             let errorMessage = e.message || 'Произошла неизвестная ошибка.';
+            if (errorMessage.includes('uploadLimitExceeded') || errorMessage.includes('exceeded the number of videos')) {
+                errorMessage = "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
+            }
+
             toast({
                 variant: "destructive",
                 title: "Ошибка загрузки",
-                description: e.message || 'Произошла неизвестная ошибка.',
+                description: errorMessage,
             });
             setUploadProgress(0);
             setUploadMessage('');
+        } finally {
             setIsSubmitting(false);
         }
     };
