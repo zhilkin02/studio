@@ -23,6 +23,7 @@ async function ThemeLoader() {
     const themeDoc = await getDoc(themeDocRef);
     if (themeDoc.exists()) {
       const theme = themeDoc.data();
+      // Important: Ensure fallback values don't break CSS if a theme value is missing.
       const style = `
         :root {
           ${theme.background ? `--background: ${theme.background};` : ''}

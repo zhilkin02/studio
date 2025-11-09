@@ -84,7 +84,7 @@
       ]
     },
     "AdminRole": {
-      "$schema": "http://json-schema.org/draft-07  /schema#",
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin Role",
       "type": "object",
       "description": "An empty document whose existence indicates admin privileges.",
@@ -98,15 +98,27 @@
       "properties": {
         "primary": {
           "type": "string",
-          "description": "Primary color in HEX format (e.g., '#330066')."
+          "description": "Primary color in HSL format (e.g., '262 80% 60%')."
         },
         "background": {
           "type": "string",
-          "description": "Background color in HEX format (e.g., '#0F0F14')."
+          "description": "Background color in HSL format (e.g., '240 5% 8%')."
         },
         "accent": {
           "type": "string",
-          "description": "Accent color in HEX format (e.g., '#4DD0E1')."
+          "description": "Accent color in HSL format (e.g., '190 95% 55%')."
+        },
+        "primaryHex": {
+            "type": "string",
+            "description": "Primary color in HEX format for the color picker (e.g., '#8b5cf6')."
+        },
+        "backgroundHex": {
+            "type": "string",
+            "description": "Background color in HEX format for the color picker (e.g., '#111827')."
+        },
+        "accentHex": {
+            "type": "string",
+            "description": "Accent color in HEX format for the color picker (e.g., '#34d399')."
         },
         "headerImageUrl": {
             "type": "string",

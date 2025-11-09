@@ -489,9 +489,9 @@ function AppearanceSettings() {
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
         values: {
-            primary: themeSettings?.primary || '#8b5cf6',
-            background: themeSettings?.background || '#111827',
-            accent: themeSettings?.accent || '#34d399',
+            primary: themeSettings?.primaryHex || '#8b5cf6',
+            background: themeSettings?.backgroundHex || '#111827',
+            accent: themeSettings?.accentHex || '#34d399',
             headerImageUrl: themeSettings?.headerImageUrl || '',
             mainImageUrl: themeSettings?.mainImageUrl || '',
             footerImageUrl: themeSettings?.footerImageUrl || '',
@@ -501,9 +501,9 @@ function AppearanceSettings() {
     useEffect(() => {
         if (themeSettings) {
             form.reset({
-                primary: themeSettings.primary || '#8b5cf6',
-                background: themeSettings.background || '#111827',
-                accent: themeSettings.accent || '#34d399',
+                primary: themeSettings.primaryHex || '#8b5cf6',
+                background: themeSettings.backgroundHex || '#111827',
+                accent: themeSettings.accentHex || '#34d399',
                 headerImageUrl: themeSettings.headerImageUrl || '',
                 mainImageUrl: themeSettings.mainImageUrl || '',
                 footerImageUrl: themeSettings.footerImageUrl || '',
@@ -533,11 +533,16 @@ function AppearanceSettings() {
         setIsSubmitting(true);
         
         const themeData = {
-            ...values,
             primary: hexToHsl(values.primary),
             background: hexToHsl(values.background),
             accent: hexToHsl(values.accent),
-        }
+            primaryHex: values.primary,
+            backgroundHex: values.background,
+            accentHex: values.accent,
+            headerImageUrl: values.headerImageUrl,
+            mainImageUrl: values.mainImageUrl,
+            footerImageUrl: values.footerImageUrl,
+        };
         
         setDoc(themeDocRef, themeData, { merge: true })
             .then(() => {
@@ -549,7 +554,7 @@ function AppearanceSettings() {
             .catch((serverError) => {
                 const permissionError = new FirestorePermissionError({
                     path: themeDocRef.path,
-                    operation: 'write',
+                    operation: 'update',
                     requestResourceData: values,
                 });
                 errorEmitter.emit('permission-error', permissionError);
