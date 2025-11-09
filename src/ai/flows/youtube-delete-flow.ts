@@ -32,13 +32,13 @@ const deleteVideoFlow = ai.defineFlow(
     },
     async (input) => {
         const { videoId } = input;
-        const clientId = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_ID;
-        const clientSecret = process.env.NEXT_PUBLIC_YOUTUBE_CLIENT_SECRET;
-        const refreshToken = process.env.NEXT_PUBLIC_YOUTUBE_REFRESH_TOKEN;
-        const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+        const clientId = process.env.YOUTUBE_CLIENT_ID;
+        const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+        const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+        const apiKey = process.env.YOUTUBE_API_KEY;
 
         if (!clientId || !clientSecret || !refreshToken || !apiKey) {
-            return { success: false, error: 'Отсутствуют учетные данные YouTube.' };
+            return { success: false, error: 'Отсутствуют учетные данные YouTube в переменных окружения.' };
         }
 
         try {
