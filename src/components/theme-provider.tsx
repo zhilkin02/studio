@@ -7,36 +7,6 @@ import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 
-function applyTheme(settings: any) {
-  if (!settings || typeof document === 'undefined') return;
-
-  Object.entries(settings).forEach(([key, value]) => {
-    if (key.endsWith('Hex')) return; // Skip hex values
-    if (value && typeof value === 'string') {
-      const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-      document.documentElement.style.setProperty(cssVar, value);
-    } else if (value && typeof value === 'number') {
-        const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-        document.documentElement.style.setProperty(cssVar, value.toString());
-    }
-  });
-}
-
-function clearTheme() {
-    if (typeof document === 'undefined') return;
-    const style = document.documentElement.style;
-    const propertiesToRemove: string[] = [];
-
-    for (let i = 0; i < style.length; i++) {
-        const prop = style[i];
-        if(prop.startsWith('--')) {
-             propertiesToRemove.push(prop);
-        }
-    }
-    propertiesToRemove.forEach(prop => style.removeProperty(prop));
-}
-
-
 function ThemeStyleApplicator() {
     const firestore = useFirestore();
     const { resolvedTheme } = useTheme();
@@ -48,19 +18,46 @@ function ThemeStyleApplicator() {
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
     React.useEffect(() => {
-        clearTheme(); // Clear old styles before applying new ones
-        if (resolvedTheme === 'dark' && darkThemeSettings) {
-            applyTheme(darkThemeSettings);
-        } else if (resolvedTheme === 'light' && lightThemeSettings) {
-            applyTheme(lightThemeSettings);
+        const root = document.documentElement;
+
+        const clearCustomProperties = () => {
+            const propertiesToRemove: string[] = [];
+            for (let i = 0; i < root.style.length; i++) {
+                const prop = root.style[i];
+                if (prop.startsWith('--')) {
+                    propertiesToRemove.push(prop);
+                }
+            }
+            propertiesToRemove.forEach(prop => root.style.removeProperty(prop));
         }
-        
-        // This effect should re-run whenever the theme or the settings change.
+
+        const applySettings = (settings: any) => {
+            if (!settings) return;
+            clearCustomProperties();
+            Object.entries(settings).forEach(([key, value]) => {
+                if (key.endsWith('Hex')) return; // Skip hex values
+                if (value && typeof value === 'string') {
+                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+                    root.style.setProperty(cssVar, value);
+                } else if (value !== null && typeof value === 'number') {
+                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+                    root.style.setProperty(cssVar, value.toString());
+                }
+            });
+        };
+
+        if (resolvedTheme === 'dark' && darkThemeSettings) {
+            applySettings(darkThemeSettings);
+        } else if (resolvedTheme === 'light' && lightThemeSettings) {
+            applySettings(lightThemeSettings);
+        } else {
+             clearCustomProperties();
+        }
+
     }, [resolvedTheme, lightThemeSettings, darkThemeSettings]);
 
-    return null; // This component does not render anything.
+    return null;
 }
-
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
