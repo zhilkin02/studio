@@ -9,7 +9,7 @@ import { useFirestore } from "@/firebase"
 
 function CustomThemeApplier() {
     const firestore = useFirestore();
-    const { theme } = useTheme();
+    const { theme, systemTheme } = useTheme();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -23,10 +23,7 @@ function CustomThemeApplier() {
 
         const applyTheme = (settings: any) => {
             if (!settings) return;
-
-            // Clear any previously applied inline styles to avoid conflicts
-            root.style.cssText = '';
-
+            
             Object.keys(settings).forEach(key => {
                  if (key.endsWith('Hex')) {
                     const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase().replace('-hex', '')}`;
@@ -37,24 +34,23 @@ function CustomThemeApplier() {
                 }
             });
         };
+
+        const clearTheme = () => {
+             // Resets inline styles to allow CSS classes to take over
+             root.style.cssText = '';
+        }
+
+        const effectiveTheme = theme === 'system' ? systemTheme : theme;
         
-        if (theme === 'light' && lightThemeSettings) {
+        if (effectiveTheme === 'light' && lightThemeSettings) {
             applyTheme(lightThemeSettings);
-        } else if (theme === 'dark' && darkThemeSettings) {
+        } else if (effectiveTheme === 'dark' && darkThemeSettings) {
             applyTheme(darkThemeSettings);
-        } else if (theme === 'system') {
-            // For system theme, we need to know if the system is in light or dark mode
-            const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (systemIsDark && darkThemeSettings) {
-                applyTheme(darkThemeSettings);
-            } else if (!systemIsDark && lightThemeSettings) {
-                 applyTheme(lightThemeSettings);
-            } else {
-                 root.style.cssText = '';
-            }
+        } else {
+            clearTheme();
         }
         
-    }, [theme, lightThemeSettings, darkThemeSettings]);
+    }, [theme, systemTheme, lightThemeSettings, darkThemeSettings]);
 
     return null;
 }

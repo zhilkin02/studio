@@ -269,6 +269,8 @@ const appearanceFormSchema = z.object({
   backgroundOpacity: z.number().min(0).max(1),
   cardOpacity: z.number().min(0).max(1),
   popoverOpacity: z.number().min(0).max(1),
+  mutedOpacity: z.number().min(0).max(1),
+  primaryOpacity: z.number().min(0).max(1),
 });
 
 const defaultDarkTheme = {
@@ -294,6 +296,8 @@ const defaultDarkTheme = {
     backgroundOpacity: 1,
     cardOpacity: 1,
     popoverOpacity: 1,
+    mutedOpacity: 1,
+    primaryOpacity: 1,
 }
 
 const defaultLightTheme = {
@@ -319,6 +323,8 @@ const defaultLightTheme = {
     backgroundOpacity: 1,
     cardOpacity: 1,
     popoverOpacity: 1,
+    mutedOpacity: 1,
+    primaryOpacity: 1,
 }
 
 
@@ -369,6 +375,8 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
         '--background-opacity': watchedValues.backgroundOpacity,
         '--card-opacity': watchedValues.cardOpacity,
         '--popover-opacity': watchedValues.popoverOpacity,
+        '--muted-opacity': watchedValues.mutedOpacity,
+        '--primary-opacity': watchedValues.primaryOpacity,
     } as React.CSSProperties;
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
@@ -431,7 +439,7 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
         />
     );
 
-    const OpacitySlider = ({ name, label }: { name: "backgroundOpacity" | "cardOpacity" | "popoverOpacity", label: string }) => (
+    const OpacitySlider = ({ name, label }: { name: "backgroundOpacity" | "cardOpacity" | "popoverOpacity" | "mutedOpacity" | "primaryOpacity", label: string }) => (
          <FormField
             control={form.control}
             name={name}
@@ -492,6 +500,8 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
                              <OpacitySlider name="backgroundOpacity" label="Прозрачность фона" />
                              <OpacitySlider name="cardOpacity" label="Прозрачность карточек" />
                              <OpacitySlider name="popoverOpacity" label="Прозрачность поповеров" />
+                             <OpacitySlider name="mutedOpacity" label="Прозрачность приглушенных" />
+                             <OpacitySlider name="primaryOpacity" label="Прозрачность основных" />
                           </div>
                     </div>
 
