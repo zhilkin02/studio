@@ -7,9 +7,45 @@ import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 
+function generateThemeCss(themeSettings: any): string {
+    if (!themeSettings) return "";
+
+    const cssVars = [
+        `--background: ${themeSettings.background}`,
+        `--foreground: ${themeSettings.foreground}`,
+        `--card: ${themeSettings.card}`,
+        `--card-foreground: ${themeSettings.cardForeground}`,
+        `--popover: ${themeSettings.popover}`,
+        `--popover-foreground: ${themeSettings.popoverForeground}`,
+        `--primary: ${themeSettings.primary}`,
+        `--primary-foreground: ${themeSettings.primaryForeground}`,
+        `--secondary: ${themeSettings.secondary}`,
+        `--secondary-foreground: ${themeSettings.secondaryForeground}`,
+        `--muted: ${themeSettings.muted}`,
+        `--muted-foreground: ${themeSettings.mutedForeground}`,
+        `--accent: ${themeSettings.accent}`,
+        `--accent-foreground: ${themeSettings.accentForeground}`,
+        `--destructive: ${themeSettings.destructive}`,
+        `--destructive-foreground: ${themeSettings.destructiveForeground}`,
+        `--border: ${themeSettings.border}`,
+        `--input: ${themeSettings.input}`,
+        `--ring: ${themeSettings.ring}`,
+    ].filter(Boolean).join('; ');
+
+    const opacityVars = [
+        `--background-opacity: ${themeSettings.backgroundOpacity ?? 1}`,
+        `--card-opacity: ${themeSettings.cardOpacity ?? 1}`,
+        `--popover-opacity: ${themeSettings.popoverOpacity ?? 1}`,
+        `--muted-opacity: ${themeSettings.mutedOpacity ?? 1}`,
+        `--primary-opacity: ${themeSettings.primaryOpacity ?? 1}`,
+    ].filter(v => v.includes('undefined') === false).join('; ');
+
+    return `${cssVars}; ${opacityVars};`;
+}
+
+
 function CustomThemeApplier() {
     const firestore = useFirestore();
-    const { theme, systemTheme } = useTheme();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -17,42 +53,19 @@ function CustomThemeApplier() {
     const { data: lightThemeSettings } = useDoc(lightThemeRef, { listen: true });
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
-    React.useEffect(() => {
-        const root = document.documentElement;
-        if (!root) return;
+    const lightThemeCss = React.useMemo(() => generateThemeCss(lightThemeSettings), [lightThemeSettings]);
+    const darkThemeCss = React.useMemo(() => generateThemeCss(darkThemeSettings), [darkThemeSettings]);
 
-        const applyTheme = (settings: any) => {
-            if (!settings) return;
-            
-            Object.keys(settings).forEach(key => {
-                 if (key.endsWith('Hex')) {
-                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase().replace('-hex', '')}`;
-                    root.style.setProperty(cssVar, settings[key.replace('Hex', '')]);
-                } else if (key.endsWith('Opacity')) {
-                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-                    root.style.setProperty(cssVar, settings[key]);
-                }
-            });
-        };
-
-        const clearTheme = () => {
-             // Resets inline styles to allow CSS classes to take over
-             root.style.cssText = '';
-        }
-
-        const effectiveTheme = theme === 'system' ? systemTheme : theme;
-        
-        if (effectiveTheme === 'light' && lightThemeSettings) {
-            applyTheme(lightThemeSettings);
-        } else if (effectiveTheme === 'dark' && darkThemeSettings) {
-            applyTheme(darkThemeSettings);
-        } else {
-            clearTheme();
-        }
-        
-    }, [theme, systemTheme, lightThemeSettings, darkThemeSettings]);
-
-    return null;
+    return (
+      <>
+        <style id="light-theme-vars">
+            {lightThemeCss && `.light { ${lightThemeCss} }`}
+        </style>
+        <style id="dark-theme-vars">
+            {darkThemeCss && `.dark { ${darkThemeCss} }`}
+        </style>
+      </>
+    );
 }
 
 

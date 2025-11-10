@@ -24,31 +24,20 @@
     --input: 240 5% 20%;
     --ring: 262 80% 60%;
     --radius: 0.5rem;
+    
+    --background-opacity: 1;
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
+    --primary-opacity: 1;
   }
 
   .dark {
-    --background: 240 5% 8%;
-    --foreground: 0 0% 98%;
-    --card: 240 5% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 5% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 262 80% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 190 95% 55%;
-    --accent-foreground: 240 5% 8%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 20%;
-    --input: 240 5% 20%;
-    --ring: 262 80% 60%;
+    /* Default dark theme values can be here, but they will be overridden by Firestore */
   }
 
   .light {
+     /* Default light theme values can be here, but they will be overridden by Firestore */
     --background: 220 20% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
