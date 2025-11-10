@@ -95,57 +95,6 @@
       "description": "An empty document whose existence indicates admin privileges.",
       "properties": {}
     },
-    "ThemeSettings": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Theme Settings",
-      "type": "object",
-      "description": "Stores site-wide appearance settings for all UI elements.",
-      "properties": {
-        "background": { "type": "string", "description": "Background color in HSL format (e.g., '240 5% 8%')." },
-        "foreground": { "type": "string", "description": "Foreground (text) color in HSL format (e.g., '0 0% 98%')." },
-        "card": { "type": "string", "description": "Card background color in HSL format." },
-        "cardForeground": { "type": "string", "description": "Card foreground color in HSL format." },
-        "popover": { "type": "string", "description": "Popover background color in HSL format." },
-        "popoverForeground": { "type": "string", "description": "Popover foreground color in HSL format." },
-        "primary": { "type": "string", "description": "Primary color for buttons and highlights in HSL format." },
-        "primaryForeground": { "type": "string", "description": "Foreground color for primary elements in HSL format." },
-        "secondary": { "type": "string", "description": "Secondary color in HSL format." },
-        "secondaryForeground": { "type": "string", "description": "Foreground color for secondary elements in HSL format." },
-        "muted": { "type": "string", "description": "Muted color for less prominent elements in HSL format." },
-        "mutedForeground": { "type": "string", "description": "Foreground color for muted elements in HSL format." },
-        "accent": { "type": "string", "description": "Accent color in HSL format." },
-        "accentForeground": { "type": "string", "description": "Foreground color for accent elements in HSL format." },
-        "border": { "type": "string", "description": "Color for borders in HSL format." },
-        "input": { "type": "string", "description": "Color for input fields in HSL format." },
-        "ring": { "type": "string", "description": "Color for focus rings in HSL format." },
-        "destructive": { "type": "string", "description": "Color for destructive actions in HSL format." },
-        "destructiveForeground": { "type": "string", "description": "Foreground color for destructive actions in HSL format." },
-        "backgroundHex": { "type": "string", "description": "Background color in HEX format." },
-        "foregroundHex": { "type": "string", "description": "Foreground color in HEX format." },
-        "cardHex": { "type": "string", "description": "Card background color in HEX format." },
-        "cardForegroundHex": { "type": "string", "description": "Card foreground color in HEX format." },
-        "popoverHex": { "type": "string", "description": "Popover background color in HEX format." },
-        "popoverForegroundHex": { "type": "string", "description": "Popover foreground color in HEX format." },
-        "primaryHex": { "type": "string", "description": "Primary color in HEX format." },
-        "primaryForegroundHex": { "type": "string", "description": "Primary foreground color in HEX format." },
-        "secondaryHex": { "type": "string", "description": "Secondary color in HEX format." },
-        "secondaryForegroundHex": { "type": "string", "description": "Secondary foreground color in HEX format." },
-        "mutedHex": { "type": "string", "description": "Muted color in HEX format." },
-        "mutedForegroundHex": { "type": "string", "description": "Muted foreground color in HEX format." },
-        "accentHex": { "type": "string", "description": "Accent color in HEX format." },
-        "accentForegroundHex": { "type": "string", "description": "Accent foreground color in HEX format." },
-        "borderHex": { "type": "string", "description": "Border color in HEX format." },
-        "inputHex": { "type": "string", "description": "Input color in HEX format." },
-        "ringHex": { "type": "string", "description": "Ring color in HEX format." },
-        "destructiveHex": { "type": "string", "description": "Destructive color in HEX format." },
-        "destructiveForegroundHex": { "type": "string", "description": "Destructive foreground color in HEX format." },
-        "backgroundOpacity": { "type": "number", "description": "The opacity of the background, from 0 to 1." },
-        "cardOpacity": { "type": "number", "description": "The opacity of the card background, from 0 to 1." },
-        "popoverOpacity": { "type": "number", "description": "The opacity of the popover background, from 0 to 1." },
-        "mutedOpacity": { "type": "number", "description": "The opacity of muted elements, from 0 to 1." },
-        "primaryOpacity": { "type": "number", "description": "The opacity of primary elements, from 0 to 1." }
-      }
-    },
     "SiteContent": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Site Content",
@@ -266,22 +215,6 @@
             {
               "name": "userId",
               "description": "The unique identifier of the user who is an admin."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/site_settings/{settingId}",
-        "definition": {
-          "entityName": "ThemeSettings",
-          "schema": {
-            "$ref": "#/backend/entities/ThemeSettings"
-          },
-          "description": "Stores global site settings. For now, it only contains a single document with id 'theme'. Accessible for read by anyone, and for write only by admins.",
-          "params": [
-            {
-              "name": "settingId",
-              "description": "The unique identifier of the setting document, e.g., 'theme'."
             }
           ]
         }
