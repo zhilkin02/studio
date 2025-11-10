@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 // Helper to extract YouTube video ID from URL
@@ -193,10 +194,29 @@ function PendingVideosList() {
                             {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video" ></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => handleReject(video)} disabled={isMutating}>
-                                {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-                                Отклонить
-                            </Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" disabled={isMutating}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        Отклонить
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Вы уверены, что хотите отклонить?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Это действие безвозвратно удалит видео с YouTube и из очереди модерации.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleReject(video)} disabled={isMutating} className={buttonVariants({ variant: "destructive" })}>
+                                            {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            Да, отклонить и удалить
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                              <Button onClick={() => handleApprove(video)} disabled={isMutating}>
                                 {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                                 Одобрить

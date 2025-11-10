@@ -26,6 +26,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -381,10 +382,29 @@ export default function Home() {
                                     <Pencil className="h-4 w-4" />
                                     <span className="sr-only">Редактировать</span>
                                 </Button>
-                                <Button variant="destructive" size="icon" onClick={() => handleDelete(video)} disabled={isMutating}>
-                                    {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                    <span className="sr-only">Удалить</span>
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="icon" disabled={isMutating}>
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Удалить</span>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Вы абсолютно уверены?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Это действие необратимо. Видео будет удалено с YouTube и из базы данных.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDelete(video)} disabled={isMutating}>
+                                                 {isMutating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                Удалить
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         )}
                     </CardFooter>
