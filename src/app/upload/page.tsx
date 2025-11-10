@@ -118,7 +118,11 @@ export default function UploadPage() {
             setUploadMessage("Видео загружено на YouTube. Сохранение в базе данных...");
             setUploadProgress(75);
 
-            const pendingCollectionRef = collection(firestore, 'pendingVideoFragments');
+            const isAdmin = user.isAdmin;
+            const collectionName = isAdmin ? 'publicVideoFragments' : 'pendingVideoFragments';
+            const status = isAdmin ? 'approved' : 'pending';
+            
+            const targetCollectionRef = collection(firestore, collectionName);
             const youtubeUrl = `https://www.youtube.com/watch?v=${result.videoId}`;
             const keywords = values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [];
 
@@ -128,13 +132,13 @@ export default function UploadPage() {
                 keywords: keywords,
                 filePath: youtubeUrl,
                 uploaderId: user.uid,
-                status: 'pending',
+                status: status,
                 uploadDate: serverTimestamp(),
             };
 
-            addDoc(pendingCollectionRef, docData).catch((serverError) => {
+            addDoc(targetCollectionRef, docData).catch((serverError) => {
                  const permissionError = new FirestorePermissionError({
-                    path: pendingCollectionRef.path,
+                    path: targetCollectionRef.path,
                     operation: 'create',
                     requestResourceData: docData,
                 });
@@ -146,8 +150,10 @@ export default function UploadPage() {
             setUploadMessage("Готово!");
 
             toast({
-                title: "Успешно отправлено!",
-                description: "Ваше видео загружено на YouTube и отправлено на модерацию.",
+                title: isAdmin ? "Видео опубликовано!" : "Успешно отправлено!",
+                description: isAdmin 
+                    ? "Ваше видео было сразу опубликовано." 
+                    : "Ваше видео загружено на YouTube и отправлено на модерацию.",
                 action: <div className="flex items-center"><CheckCircle className="text-green-500 mr-2"/><span>Отлично</span></div>
             });
             
@@ -200,7 +206,10 @@ export default function UploadPage() {
         <CardHeader>
           <CardTitle>Добавить новое видео</CardTitle>
           <CardDescription>
-            Выберите видеофайл и заполните форму. Видео будет загружено на YouTube-канал проекта как "невидимое" и отправлено на модерацию.
+            {user.isAdmin 
+              ? "Видео будет загружено на YouTube-канал проекта и сразу опубликовано."
+              : "Выберите видеофайл и заполните форму. Видео будет загружено на YouTube-канал проекта как 'невидимое' и отправлено на модерацию."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -236,7 +245,7 @@ export default function UploadPage() {
                         <Timer className="h-4 w-4" />
                         <AlertTitle>Достигнут лимит загрузок YouTube</AlertTitle>
                         <AlertDescription>
-                            Суточный лимит на загрузку видео исчерпан. Пожалуйста, попробуйте снова позже.
+                           Суточный лимит на загрузку видео исчерпан. Пожалуйста, попробуйте снова позже.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -308,7 +317,7 @@ export default function UploadPage() {
 
 
               <Button type="submit" disabled={isSubmitting || !videoFile || quotaExceeded}>
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Загрузка...</> : 'Загрузить и отправить на модерацию'}
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Загрузка...</> : (user.isAdmin ? 'Загрузить и опубликовать' : 'Загрузить и отправить на модерацию')}
               </Button>
             </form>
           </Form>
