@@ -383,9 +383,6 @@ function SiteContentEditor() {
     const { data: content, loading } = useDoc(docRef);
 
     const [formData, setFormData] = useState({
-        header_title: '',
-        home_subtitle: '',
-        footer_text: '',
         heroImageUrl: '',
         heroImageObjectFit: 'cover',
         heroImageObjectPosition: 'center'
@@ -394,9 +391,6 @@ function SiteContentEditor() {
     useEffect(() => {
         if (content) {
             setFormData({
-                header_title: content.header_title || '',
-                home_subtitle: content.content?.home_subtitle || '',
-                footer_text: content.footer_text || '',
                 heroImageUrl: content.heroImageUrl || '',
                 heroImageObjectFit: content.heroImageObjectFit || 'cover',
                 heroImageObjectPosition: content.heroImageObjectPosition || 'center'
@@ -417,15 +411,9 @@ function SiteContentEditor() {
         if (!docRef) return;
         setIsSubmitting(true);
         const dataToSave = {
-            header_title: formData.header_title,
-            footer_text: formData.footer_text,
             heroImageUrl: formData.heroImageUrl,
             heroImageObjectFit: formData.heroImageObjectFit,
             heroImageObjectPosition: formData.heroImageObjectPosition,
-            content: {
-                ...content?.content,
-                 home_subtitle: formData.home_subtitle,
-            }
         };
 
         try {
@@ -458,24 +446,12 @@ function SiteContentEditor() {
     return (
          <Card>
             <CardHeader>
-                <CardTitle>Редактирование контента</CardTitle>
+                <CardTitle>Контент на главной</CardTitle>
                 <CardDescription>
-                    Измените тексты и изображение на главной странице.
+                    Измените фоновое изображение и его отображение на главной странице. Текстовые поля редактируются прямо на самой странице.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 <div className="space-y-2">
-                    <Label htmlFor="header_title">Заголовок в шапке</Label>
-                    <Input id="header_title" name="header_title" value={formData.header_title} onChange={handleChange} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="home_subtitle">Подзаголовок на главной</Label>
-                    <Input id="home_subtitle" name="home_subtitle" value={formData.home_subtitle} onChange={handleChange} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="footer_text">Текст в подвале</Label>
-                    <Input id="footer_text" name="footer_text" value={formData.footer_text} onChange={handleChange} />
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="heroImageUrl">URL главного изображения</Label>
                     <Input id="heroImageUrl" name="heroImageUrl" value={formData.heroImageUrl} onChange={handleChange} placeholder="https://images.unsplash.com/..." />
