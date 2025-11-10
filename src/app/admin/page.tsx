@@ -5,11 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Users, User, Shield } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Users, User, Shield, Palette, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,8 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-
-
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -371,6 +372,174 @@ function UserManagement() {
     );
 }
 
+function SiteContentEditor() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const docRef = useMemo(() => firestore ? doc(firestore, 'site_content', 'main') : null, [firestore]);
+    const { data: content, loading } = useDoc(docRef);
+
+    const [formData, setFormData] = useState({
+        header_title: '',
+        home_subtitle: '',
+        footer_text: '',
+        heroImageUrl: '',
+        heroImageObjectFit: 'cover',
+        heroImageObjectPosition: 'center'
+    });
+
+    useEffect(() => {
+        if (content) {
+            setFormData({
+                header_title: content.header_title || '',
+                home_subtitle: content.content?.home_subtitle || '',
+                footer_text: content.footer_text || '',
+                heroImageUrl: content.heroImageUrl || '',
+                heroImageObjectFit: content.heroImageObjectFit || 'cover',
+                heroImageObjectPosition: content.heroImageObjectPosition || 'center'
+            });
+        }
+    }, [content]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleSave = async () => {
+        if (!docRef) return;
+        setIsSubmitting(true);
+        const dataToSave = {
+            header_title: formData.header_title,
+            footer_text: formData.footer_text,
+            heroImageUrl: formData.heroImageUrl,
+            heroImageObjectFit: formData.heroImageObjectFit,
+            heroImageObjectPosition: formData.heroImageObjectPosition,
+            content: {
+                ...content?.content,
+                 home_subtitle: formData.home_subtitle,
+            }
+        };
+
+        try {
+            await setDoc(docRef, dataToSave, { merge: true });
+            toast({
+                title: 'Контент обновлен!',
+                description: 'Изменения на сайте были успешно сохранены.',
+            });
+        } catch (e: any) {
+             const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: dataToSave,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({ variant: 'destructive', title: 'Ошибка сохранения', description: e.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    if (loading) {
+        return <Skeleton className="h-[400px] w-full" />
+    }
+
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle>Редактирование контента</CardTitle>
+                <CardDescription>
+                    Измените тексты и изображение на главной странице.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                 <div className="space-y-2">
+                    <Label htmlFor="header_title">Заголовок в шапке</Label>
+                    <Input id="header_title" name="header_title" value={formData.header_title} onChange={handleChange} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="home_subtitle">Подзаголовок на главной</Label>
+                    <Input id="home_subtitle" name="home_subtitle" value={formData.home_subtitle} onChange={handleChange} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="footer_text">Текст в подвале</Label>
+                    <Input id="footer_text" name="footer_text" value={formData.footer_text} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="heroImageUrl">URL главного изображения</Label>
+                    <Input id="heroImageUrl" name="heroImageUrl" value={formData.heroImageUrl} onChange={handleChange} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="heroImageObjectFit">Растягивание изображения (object-fit)</Label>
+                        <Input id="heroImageObjectFit" name="heroImageObjectFit" value={formData.heroImageObjectFit} onChange={handleChange} />
+                        <p className="text-xs text-muted-foreground">Напр: cover, contain, fill</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="heroImageObjectPosition">Позиция изображения (object-position)</Label>
+                        <Input id="heroImageObjectPosition" name="heroImageObjectPosition" value={formData.heroImageObjectPosition} onChange={handleChange} />
+                         <p className="text-xs text-muted-foreground">Напр: center, top, right bottom</p>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={handleSave} disabled={isSubmitting}>
+                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Сохранить контент
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+// Dummy ThemeCustomizer - functionality to edit globals.css is not possible from client-side code.
+// This component serves as a placeholder to show the user what could be edited.
+const ThemeCustomizer = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Настройка внешнего вида</CardTitle>
+        <CardDescription>
+          Изменение темы требует прямого редактирования файла <code className="font-mono bg-muted px-1 py-0.5 rounded">src/app/globals.css</code>.
+          <br />
+          Вы можете изменить CSS переменные для <code className="font-mono bg-muted px-1 py-0.5 rounded">:root</code> (светлая тема) и <code className="font-mono bg-muted px-1 py-0.5 rounded">.dark</code> (темная тема).
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Только для демонстрации</AlertTitle>
+          <AlertDescription>
+            Эта форма не сохраняет изменения. Чтобы настроить тему, пожалуйста, отредактируйте CSS файл напрямую.
+          </AlertDescription>
+        </Alert>
+         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 className="font-semibold mb-4">Светлая тема</h3>
+                <div className="space-y-2 font-mono text-sm">
+                    <p>--background: 220 20% 98%;</p>
+                    <p>--foreground: 240 5% 8%;</p>
+                    <p>--primary: 262 80% 50%;</p>
+                    <p>...</p>
+                </div>
+            </div>
+             <div>
+                <h3 className="font-semibold mb-4">Темная тема</h3>
+                <div className="space-y-2 font-mono text-sm">
+                    <p>--background: 240 5% 8%;</p>
+                    <p>--foreground: 0 0% 98%;</p>
+                    <p>--primary: 262 80% 60%;</p>
+                    <p>...</p>
+                </div>
+            </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+
 export default function AdminPage() {
     const { user, loading } = useUser();
     const router = useRouter();
@@ -398,15 +567,23 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
+            <TabsTrigger value="content"><FileText className="mr-2 h-4 w-4" />Контент</TabsTrigger>
+            <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" />Внешний вид</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
         </TabsContent>
         <TabsContent value="users" className="mt-6">
             <UserManagement />
+        </TabsContent>
+         <TabsContent value="content" className="mt-6">
+            <SiteContentEditor />
+        </TabsContent>
+        <TabsContent value="appearance" className="mt-6">
+            <ThemeCustomizer />
         </TabsContent>
       </Tabs>
     </div>

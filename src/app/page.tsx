@@ -178,11 +178,11 @@ export default function Home() {
 
   const { data: videos, loading, error } = useCollection(videosQuery);
   const contentDocRef = useMemo(() => firestore ? doc(firestore, 'site_content', 'main') : null, [firestore]);
-  const { data: contentData, loading: contentLoading } = useDoc(contentDocRef);
+  const { data: content, loading: contentLoading } = useDoc(contentDocRef);
   
-  const heroImageUrl = contentData?.heroImageUrl || PlaceHolderImages.find(p => p.id === 'hero-1')?.imageUrl;
-  const heroImageObjectFit = contentData?.heroImageObjectFit || 'cover';
-  const heroImageObjectPosition = contentData?.heroImageObjectPosition || 'center';
+  const heroImageUrl = content?.heroImageUrl || PlaceHolderImages.find(p => p.id === 'hero-1')?.imageUrl;
+  const heroImageObjectFit = content?.heroImageObjectFit || 'cover';
+  const heroImageObjectPosition = content?.heroImageObjectPosition || 'center';
 
 
   const filteredVideos = useMemo(() => {
@@ -260,7 +260,7 @@ export default function Home() {
         <section className="text-center py-8">
             <EditableText
               docPath="site_content/main"
-              fieldKey="home_title"
+              fieldKey="header_title"
               defaultValue="Коротко О Не Коротком"
               render={(text) => <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 whitespace-pre-wrap">{text}</h1>}
               textarea={true}

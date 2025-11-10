@@ -53,8 +53,15 @@ export function EditableText({
   );
 
   const { data: docData, loading } = useDoc(docRef);
+  
+  // This logic is a bit complex because some fields are direct properties
+  // and some are nested inside the `content` map.
+  const currentText = (docData && fieldKey in docData) 
+    ? docData[fieldKey] 
+    : (docData?.content && fieldKey in docData.content) 
+      ? docData.content[fieldKey] 
+      : defaultValue;
 
-  const currentText = docData?.content?.[fieldKey] ?? defaultValue;
 
   useEffect(() => {
     if (isEditing) {
@@ -65,13 +72,19 @@ export function EditableText({
   const handleSave = async () => {
     if (!docRef) return;
     setIsSubmitting(true);
-
-    const dataToSet = {
+    
+    // Determine if the key is a top-level property or nested in `content`
+    const isTopLevelField = ['header_title', 'footer_text'].includes(fieldKey);
+    
+    const dataToSet = isTopLevelField 
+    ? { [fieldKey]: editText }
+    : {
         content: {
             ...docData?.content,
             [fieldKey]: editText,
         }
-    };
+      };
+
 
     setDoc(docRef, dataToSet, { merge: true })
       .then(() => {
@@ -153,5 +166,3 @@ export function EditableText({
     </div>
   );
 }
-
-    
