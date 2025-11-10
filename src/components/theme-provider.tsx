@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { type ThemeProviderProps } from "next-themes/dist/types"
 import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
@@ -10,39 +10,26 @@ import { useFirestore } from "@/firebase"
 function createThemeCss(settings: any): string | null {
     if (!settings) return null;
     
-    // Ensure all values exist to prevent "undefined" in CSS
-    const props = [
-        settings.background ? `--background: ${settings.background}` : null,
-        settings.foreground ? `--foreground: ${settings.foreground}` : null,
-        settings.card ? `--card: ${settings.card}` : null,
-        settings.cardForeground ? `--card-foreground: ${settings.cardForeground}` : null,
-        settings.popover ? `--popover: ${settings.popover}` : null,
-        settings.popoverForeground ? `--popover-foreground: ${settings.popoverForeground}` : null,
-        settings.primary ? `--primary: ${settings.primary}` : null,
-        settings.primaryForeground ? `--primary-foreground: ${settings.primaryForeground}` : null,
-        settings.secondary ? `--secondary: ${settings.secondary}` : null,
-        settings.secondaryForeground ? `--secondary-foreground: ${settings.secondaryForeground}` : null,
-        settings.muted ? `--muted: ${settings.muted}` : null,
-        settings.mutedForeground ? `--muted-foreground: ${settings.mutedForeground}` : null,
-        settings.accent ? `--accent: ${settings.accent}` : null,
-        settings.accentForeground ? `--accent-foreground: ${settings.accentForeground}` : null,
-        settings.destructive ? `--destructive: ${settings.destructive}` : null,
-        settings.destructiveForeground ? `--destructive-foreground: ${settings.destructiveForeground}` : null,
-        settings.border ? `--border: ${settings.border}` : null,
-        settings.input ? `--input: ${settings.input}` : null,
-        settings.ring ? `--ring: ${settings.ring}` : null,
-        settings.backgroundOpacity !== undefined ? `--background-opacity: ${settings.backgroundOpacity}` : null,
-        settings.cardOpacity !== undefined ? `--card-opacity: ${settings.cardOpacity}` : null,
-        settings.popoverOpacity !== undefined ? `--popover-opacity: ${settings.popoverOpacity}` : null,
-        settings.mutedOpacity !== undefined ? `--muted-opacity: ${settings.mutedOpacity}` : null,
-        settings.primaryOpacity !== undefined ? `--primary-opacity: ${settings.primaryOpacity}` : null,
-    ];
+    const props = Object.entries(settings)
+        .map(([key, value]) => {
+            if (key.endsWith('Hex')) {
+                const baseKey = key.replace(/Hex$/, '');
+                if (settings[baseKey]) {
+                     return `--${baseKey.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${settings[baseKey]}`;
+                }
+            } else if (key.endsWith('Opacity')) {
+                 const baseKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                 return `--${baseKey}: ${value}`;
+            }
+            return null;
+        })
+        .filter(Boolean);
 
-    return props.filter(Boolean).join('; ');
+    return props.join('; ');
 }
 
 
-function DynamicThemeInjector() {
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     const firestore = useFirestore();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
@@ -57,36 +44,33 @@ function DynamicThemeInjector() {
         setIsMounted(true);
     }, []);
 
-    const lightThemeCss = React.useMemo(() => createThemeCss(lightThemeSettings), [lightThemeSettings]);
-    const darkThemeCss = React.useMemo(() => createThemeCss(darkThemeSettings), [darkThemeSettings]);
+    React.useEffect(() => {
+        if (!isMounted) return;
 
-    // We only render the style tags on the client after mounting to avoid hydration mismatch errors.
-    if (!isMounted) {
-        return null;
-    }
-
-    return (
-      <>
-        {lightThemeCss && 
-            <style id="dynamic-light-theme" dangerouslySetInnerHTML={{
-                __html: `.light { ${lightThemeCss} }`
-            }}/>
+        const lightThemeCss = createThemeCss(lightThemeSettings);
+        const darkThemeCss = createThemeCss(darkThemeSettings);
+        
+        let lightStyleTag = document.getElementById('dynamic-light-theme');
+        if (!lightStyleTag) {
+            lightStyleTag = document.createElement('style');
+            lightStyleTag.id = 'dynamic-light-theme';
+            document.head.appendChild(lightStyleTag);
         }
-        {darkThemeCss && 
-            <style id="dynamic-dark-theme" dangerouslySetInnerHTML={{
-                __html: `.dark { ${darkThemeCss} }`
-            }}/>
+        lightStyleTag.innerHTML = lightThemeCss ? `.light { ${lightThemeCss} }` : '';
+
+        let darkStyleTag = document.getElementById('dynamic-dark-theme');
+        if (!darkStyleTag) {
+            darkStyleTag = document.createElement('style');
+            darkStyleTag.id = 'dynamic-dark-theme';
+            document.head.appendChild(darkStyleTag);
         }
-      </>
-    )
-}
+        darkStyleTag.innerHTML = darkThemeCss ? `.dark { ${darkThemeCss} }` : '';
 
+    }, [isMounted, lightThemeSettings, darkThemeSettings]);
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
       {children}
-      <DynamicThemeInjector />
     </NextThemesProvider>
   )
 }
