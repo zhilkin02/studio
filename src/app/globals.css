@@ -33,11 +33,61 @@
   }
 
   .dark {
-    /* Эти переменные будут динамически перезаписаны из Firestore */
+    --background: 240 5% 8%;
+    --foreground: 0 0% 98%;
+    --card: 240 5% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 262 80% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 190 95% 55%;
+    --accent-foreground: 240 5% 8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 262 80% 60%;
+    --radius: 0.5rem;
+
+    --background-opacity: 1;
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
+    --primary-opacity: 1;
   }
 
   .light {
-     /* Эти переменные будут динамически перезаписаны из Firestore */
+    --background: 220 20% 98%;
+    --foreground: 240 5% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 5% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5% 8%;
+    --primary: 262 80% 50%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5% 90%;
+    --secondary-foreground: 240 5% 8%;
+    --muted: 240 5% 94%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 190 95% 45%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5% 85%;
+    --input: 240 5% 85%;
+    --ring: 262 80% 50%;
+    --radius: 0.5rem;
+
+    --background-opacity: 1;
+    --card-opacity: 1;
+    --popover-opacity: 1;
+    --muted-opacity: 1;
+    --primary-opacity: 1;
   }
 }
 
