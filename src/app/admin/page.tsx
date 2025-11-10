@@ -268,61 +268,89 @@ const appearanceFormSchema = z.object({
   popoverForegroundHex: hexColor,
 });
 
+const defaultDarkTheme = {
+    primaryHex: '#8b5cf6',
+    secondaryHex: '#374151',
+    backgroundHex: '#111827',
+    foregroundHex: '#f8fafc',
+    accentHex: '#34d399',
+    mutedHex: '#374151',
+    destructiveHex: '#ef4444',
+    cardHex: '#1f2937',
+    borderHex: '#374151',
+    inputHex: '#374151',
+    ringHex: '#8b5cf6',
+    primaryForegroundHex: '#f8fafc',
+    secondaryForegroundHex: '#f9fafb',
+    accentForegroundHex: '#111827',
+    mutedForegroundHex: '#9ca3af',
+    destructiveForegroundHex: '#f8fafc',
+    cardForegroundHex: '#f9fafb',
+    popoverHex: '#1f2937',
+    popoverForegroundHex: '#f9fafb',
+}
+
+const defaultLightTheme = {
+    primaryHex: '#7c3aed',
+    secondaryHex: '#e5e7eb',
+    backgroundHex: '#f8fafc',
+    foregroundHex: '#020617',
+    accentHex: '#10b981',
+    mutedHex: '#f3f4f6',
+    destructiveHex: '#dc2626',
+    cardHex: '#ffffff',
+    borderHex: '#e5e7eb',
+    inputHex: '#e5e7eb',
+    ringHex: '#7c3aed',
+    primaryForegroundHex: '#f8fafc',
+    secondaryForegroundHex: '#1f2937',
+    accentForegroundHex: '#f8fafc',
+    mutedForegroundHex: '#6b7280',
+    destructiveForegroundHex: '#f8fafc',
+    cardForegroundHex: '#020617',
+    popoverHex: '#ffffff',
+    popoverForegroundHex: '#020617',
+}
+
 
 function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeType: 'light' | 'dark', themeData: any, isLoading: boolean, onSave: (values: any) => Promise<void> }) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const defaultValues = themeType === 'dark' ? defaultDarkTheme : defaultLightTheme;
+
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
-        defaultValues: {
-            primaryHex: '#000000',
-            secondaryHex: '#000000',
-            backgroundHex: '#000000',
-            foregroundHex: '#000000',
-            accentHex: '#000000',
-            mutedHex: '#000000',
-            destructiveHex: '#000000',
-            cardHex: '#000000',
-            borderHex: '#000000',
-            inputHex: '#000000',
-            ringHex: '#000000',
-            primaryForegroundHex: '#000000',
-            secondaryForegroundHex: '#000000',
-            accentForegroundHex: '#000000',
-            mutedForegroundHex: '#000000',
-            destructiveForegroundHex: '#000000',
-            cardForegroundHex: '#000000',
-            popoverHex: '#000000',
-            popoverForegroundHex: '#000000',
-        }
+        defaultValues: defaultValues
     });
 
     useEffect(() => {
         if (themeData) {
             form.reset({
-                primaryHex: themeData.primaryHex || '#8b5cf6',
-                secondaryHex: themeData.secondaryHex || '#374151',
-                backgroundHex: themeData.backgroundHex || '#111827',
-                foregroundHex: themeData.foregroundHex || '#f8fafc',
-                accentHex: themeData.accentHex || '#34d399',
-                mutedHex: themeData.mutedHex || '#374151',
-                destructiveHex: themeData.destructiveHex || '#ef4444',
-                cardHex: themeData.cardHex || '#1f2937',
-                borderHex: themeData.borderHex || '#374151',
-                inputHex: themeData.inputHex || '#374151',
-                ringHex: themeData.ringHex || '#8b5cf6',
-                primaryForegroundHex: themeData.primaryForegroundHex || '#f8fafc',
-                secondaryForegroundHex: themeData.secondaryForegroundHex || '#f9fafb',
-                accentForegroundHex: themeData.accentForegroundHex || '#111827',
-                mutedForegroundHex: themeData.mutedForegroundHex || '#9ca3af',
-                destructiveForegroundHex: themeData.destructiveForegroundHex || '#f8fafc',
-                cardForegroundHex: themeData.cardForegroundHex || '#f9fafb',
-                popoverHex: themeData.popoverHex || '#111827',
-                popoverForegroundHex: themeData.popoverForegroundHex || '#f9fafb',
+                primaryHex: themeData.primaryHex || defaultValues.primaryHex,
+                secondaryHex: themeData.secondaryHex || defaultValues.secondaryHex,
+                backgroundHex: themeData.backgroundHex || defaultValues.backgroundHex,
+                foregroundHex: themeData.foregroundHex || defaultValues.foregroundHex,
+                accentHex: themeData.accentHex || defaultValues.accentHex,
+                mutedHex: themeData.mutedHex || defaultValues.mutedHex,
+                destructiveHex: themeData.destructiveHex || defaultValues.destructiveHex,
+                cardHex: themeData.cardHex || defaultValues.cardHex,
+                borderHex: themeData.borderHex || defaultValues.borderHex,
+                inputHex: themeData.inputHex || defaultValues.inputHex,
+                ringHex: themeData.ringHex || defaultValues.ringHex,
+                primaryForegroundHex: themeData.primaryForegroundHex || defaultValues.primaryForegroundHex,
+                secondaryForegroundHex: themeData.secondaryForegroundHex || defaultValues.secondaryForegroundHex,
+                accentForegroundHex: themeData.accentForegroundHex || defaultValues.accentForegroundHex,
+                mutedForegroundHex: themeData.mutedForegroundHex || defaultValues.mutedForegroundHex,
+                destructiveForegroundHex: themeData.destructiveForegroundHex || defaultValues.destructiveForegroundHex,
+                cardForegroundHex: themeData.cardForegroundHex || defaultValues.cardForegroundHex,
+                popoverHex: themeData.popoverHex || defaultValues.popoverHex,
+                popoverForegroundHex: themeData.popoverForegroundHex || defaultValues.popoverForegroundHex,
             });
+        } else {
+             form.reset(defaultValues);
         }
-    }, [themeData, form]);
+    }, [themeData, form, defaultValues]);
 
     const watchedValues = form.watch();
 
@@ -519,7 +547,7 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
 
 function AppearanceSettings() {
     const firestore = useFirestore();
-    const [activeTab, setActiveTab] = useState<'dark' | 'light'>('dark');
+    const [activeTab, setActiveTab] = useState<'dark-theme' | 'light-theme' | 'hero'>('dark-theme');
 
     const darkThemeDocRef = useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
     const lightThemeDocRef = useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
@@ -555,7 +583,7 @@ function AppearanceSettings() {
 
 
     const handleThemeSave = async (values: any) => {
-        const themeDocRef = activeTab === 'dark' ? darkThemeDocRef : lightThemeDocRef;
+        const themeDocRef = activeTab === 'dark-theme' ? darkThemeDocRef : lightThemeDocRef;
         if (!themeDocRef) return;
         
         const themeData = {
@@ -640,7 +668,7 @@ function AppearanceSettings() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="hero" className="w-full">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="hero">Изображение</TabsTrigger>
                         <TabsTrigger value="dark-theme">Тёмная тема</TabsTrigger>
@@ -952,3 +980,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
