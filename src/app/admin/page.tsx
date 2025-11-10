@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Check, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,6 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { setDoc } from 'firebase/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 function hexToHsl(hex: string): string | null {
@@ -267,6 +269,8 @@ const appearanceFormSchema = z.object({
   mutedOpacity: z.number().min(0).max(1),
   primaryOpacity: z.number().min(0).max(1),
   heroImageUrl: z.string().url("Неверный URL.").or(z.literal('')),
+  heroImageObjectFit: z.enum(['cover', 'contain', 'fill', 'none', 'scale-down']),
+  heroImageObjectPosition: z.string().max(50, "Слишком длинное значение.").optional(),
 });
 
 
@@ -297,13 +301,16 @@ function AppearanceSettings() {
             mutedOpacity: 1,
             primaryOpacity: 1,
             heroImageUrl: '',
+            heroImageObjectFit: 'cover',
+            heroImageObjectPosition: 'center',
         }
     });
 
      useEffect(() => {
+        const currentValues = form.getValues();
         if (themeSettings) {
              form.reset({
-                ...form.getValues(),
+                ...currentValues,
                 primaryHex: themeSettings.primaryHex || '#8b5cf6',
                 secondaryHex: themeSettings.secondaryHex || '#374151',
                 backgroundHex: themeSettings.backgroundHex || '#111827',
@@ -334,6 +341,8 @@ function AppearanceSettings() {
             form.reset({
                 ...form.getValues(),
                 heroImageUrl: contentSettings.heroImageUrl || '',
+                heroImageObjectFit: contentSettings.heroImageObjectFit || 'cover',
+                heroImageObjectPosition: contentSettings.heroImageObjectPosition || 'center',
             });
         }
     }, [themeSettings, contentSettings, form]);
@@ -418,7 +427,9 @@ function AppearanceSettings() {
         };
 
         const contentData = {
-            heroImageUrl: values.heroImageUrl
+            heroImageUrl: values.heroImageUrl,
+            heroImageObjectFit: values.heroImageObjectFit,
+            heroImageObjectPosition: values.heroImageObjectPosition,
         };
         
         const themePromise = setDoc(themeDocRef, themeData, { merge: true });
@@ -486,7 +497,7 @@ function AppearanceSettings() {
             </Alert>
         )
     }
-    const ColorPickerInput = ({ name, label }: { name: Exclude<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity` | 'heroImageUrl'>, label: string }) => (
+    const ColorPickerInput = ({ name, label }: { name: Exclude<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity` | 'heroImageUrl' | 'heroImageObjectFit' | 'heroImageObjectPosition'>, label: string }) => (
         <FormField
             control={form.control}
             name={name}
@@ -520,7 +531,7 @@ function AppearanceSettings() {
                     <FormLabel>{label} ({typeof field.value === 'number' ? field.value.toFixed(2) : '1.00'})</FormLabel>
                     <FormControl>
                         <Slider
-                            value={[field.value]}
+                            value={[field.value ?? 1]}
                             min={0}
                             max={1}
                             step={0.05}
@@ -548,6 +559,7 @@ function AppearanceSettings() {
                         <div className="space-y-8">
                              <div>
                                 <h3 className="text-lg font-medium mb-4">Изображение на главной</h3>
+                                <div className="space-y-4">
                                 <FormField
                                     control={form.control}
                                     name="heroImageUrl"
@@ -564,6 +576,46 @@ function AppearanceSettings() {
                                         </FormItem>
                                     )}
                                 />
+                                <FormField
+                                    control={form.control}
+                                    name="heroImageObjectFit"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Масштабирование</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Выберите режим..." />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="cover">Покрытие (обрезается)</SelectItem>
+                                                    <SelectItem value="contain">Вписать (с полями)</SelectItem>
+                                                    <SelectItem value="fill">Заполнение (с искажением)</SelectItem>
+                                                    <SelectItem value="none">Без масштабирования</SelectItem>
+                                                    <SelectItem value="scale-down">Уменьшить до размера</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>Как изображение должно заполнять область.</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="heroImageObjectPosition"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Позиционирование</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} disabled={isSubmitting} placeholder="center, top right, 50% 25%..." />
+                                            </FormControl>
+                                            <FormDescription>Фокусная точка изображения. Например: `top`, `bottom`, `left`, `right`, `center`.</FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                </div>
                              </div>
                              <Separator />
                              <div>

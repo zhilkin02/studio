@@ -172,6 +172,14 @@
           "type": "string",
           "format": "uri",
           "description": "The URL for the hero image displayed on the main page."
+        },
+        "heroImageObjectFit": {
+            "type": "string",
+            "description": "The object-fit property for the hero image (e.g., 'cover', 'contain')."
+        },
+        "heroImageObjectPosition": {
+            "type": "string",
+            "description": "The object-position property for the hero image (e.g., 'center', 'top right')."
         }
       }
     }

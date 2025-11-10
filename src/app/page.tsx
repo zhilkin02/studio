@@ -181,6 +181,8 @@ export default function Home() {
   const { data: contentData, loading: contentLoading } = useDoc(contentDocRef);
   
   const heroImageUrl = contentData?.heroImageUrl || PlaceHolderImages.find(p => p.id === 'hero-1')?.imageUrl;
+  const heroImageObjectFit = contentData?.heroImageObjectFit || 'cover';
+  const heroImageObjectPosition = contentData?.heroImageObjectPosition || 'center';
 
 
   const filteredVideos = useMemo(() => {
@@ -245,7 +247,10 @@ export default function Home() {
                     src={heroImageUrl}
                     alt="Hero image"
                     fill
-                    className="object-cover"
+                    style={{ 
+                        objectFit: heroImageObjectFit as 'cover' | 'contain' | 'fill' | 'none' | 'scale-down', 
+                        objectPosition: heroImageObjectPosition 
+                    }}
                     priority
                     data-ai-hint="retro tv"
                 />
