@@ -240,22 +240,23 @@ export default function Home() {
 
 
   return (
-    <div className="container mx-auto px-4 py-8">
-        <section className="relative w-full h-48 md:h-64 mb-8 -mx-4">
-            {contentLoading ? <Skeleton className="w-full h-full" /> : (
-                 <Image
-                    src={heroImageUrl}
-                    alt="Hero image"
-                    fill
-                    style={{ 
-                        objectFit: heroImageObjectFit as 'cover' | 'contain' | 'fill' | 'none' | 'scale-down', 
-                        objectPosition: heroImageObjectPosition 
-                    }}
-                    priority
-                    data-ai-hint="retro tv"
-                />
-            )}
-        </section>
+    <>
+      <section className="relative w-full h-48 md:h-64 -mx-4 sm:mx-0">
+          {contentLoading ? <Skeleton className="w-full h-full" /> : (
+                <Image
+                  src={heroImageUrl}
+                  alt="Hero image"
+                  fill
+                  style={{ 
+                      objectFit: heroImageObjectFit as 'cover' | 'contain' | 'fill' | 'none' | 'scale-down', 
+                      objectPosition: heroImageObjectPosition 
+                  }}
+                  priority
+                  data-ai-hint="retro tv"
+              />
+          )}
+      </section>
+      <div className="container mx-auto px-4 pb-8">
         <section className="text-center py-8">
             <EditableText
               docPath="site_content/main"
@@ -406,7 +407,6 @@ export default function Home() {
         </Dialog>
       )}
     </div>
+    </>
   );
 }
-
-    
