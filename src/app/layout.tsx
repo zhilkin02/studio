@@ -24,9 +24,10 @@ async function SystemThemeLoader() {
     const themeDoc = await getDoc(themeDocRef);
     const theme = themeDoc.exists() ? themeDoc.data() : {};
     
-    // Set default values directly in the style block if they don't exist in theme
+    // These variables will be applied to the :root selector when the theme is 'system'
+    // next-themes will handle applying .light or .dark based on OS preference.
     const style = `
-      .theme-system {
+      :root {
         --background: ${theme.background || '240 5% 8%'};
         --foreground: ${theme.foreground || '0 0% 98%'};
         --card: ${theme.card || '240 5% 12%'};
