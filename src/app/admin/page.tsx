@@ -23,8 +23,6 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import fs from 'fs';
-import path from 'path';
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -550,7 +548,7 @@ function ThemeCustomizer({ initialCssContent }: { initialCssContent: string }) {
     );
 }
 
-function AdminPageClient({ cssContent }: { cssContent: string }) {
+export default function AdminPageClient({ cssContent }: { cssContent: string }) {
     const { user, loading } = useUser();
     const router = useRouter();
 
@@ -598,17 +596,4 @@ function AdminPageClient({ cssContent }: { cssContent: string }) {
       </Tabs>
     </div>
   );
-}
-
-
-export default async function AdminPage() {
-    let cssContent = '';
-    try {
-        const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
-        cssContent = fs.readFileSync(cssFilePath, 'utf8');
-    } catch (error) {
-        console.error("Could not read globals.css:", error);
-    }
-
-    return <AdminPageClient cssContent={cssContent} />;
 }
