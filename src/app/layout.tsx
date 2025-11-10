@@ -24,8 +24,8 @@ async function SystemThemeLoader() {
     const themeDoc = await getDoc(themeDocRef);
     const theme = themeDoc.exists() ? themeDoc.data() : {};
     
-    // These variables will be applied to the :root selector when the theme is 'system'
-    // next-themes will handle applying .light or .dark based on OS preference.
+    // These variables are applied when no specific theme (.light or .dark) is set by next-themes,
+    // which is the case for 'system' theme on initial load.
     const style = `
       :root {
         --background: ${theme.background || '240 5% 8%'};
@@ -86,7 +86,6 @@ export default function RootLayout({
             attribute="class"
             defaultTheme="system"
             enableSystem
-            disableTransitionOnChange
         >
             <FirebaseClientProvider>
               <Header />
