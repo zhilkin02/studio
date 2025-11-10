@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { FirebaseClientProvider, initializeFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Suspense } from 'react';
+import { ThemeProvider } from '@/components/theme-provider';
 
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   description: 'Поиск фрагментов из фильмов и сериалов',
 };
 
-async function ThemeLoader() {
+async function SystemThemeLoader() {
   // We initialize a temporary instance here on the server to fetch the theme.
   // This doesn't affect the client-side singleton initialization.
   const { firestore } = initializeFirebase();
@@ -25,7 +26,7 @@ async function ThemeLoader() {
     
     // Set default values directly in the style block if they don't exist in theme
     const style = `
-      :root, .dark {
+      .theme-system {
         --background: ${theme.background || '240 5% 8%'};
         --foreground: ${theme.foreground || '0 0% 98%'};
         --card: ${theme.card || '240 5% 12%'};
@@ -67,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className="dark">
+    <html lang="ru" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -76,16 +77,23 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <Suspense fallback={null}>
-          <ThemeLoader />
+          <SystemThemeLoader />
         </Suspense>
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
-        <FirebaseClientProvider>
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <Toaster />
-        </FirebaseClientProvider>
+       <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <FirebaseClientProvider>
+              <Header />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+              <Toaster />
+            </FirebaseClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
