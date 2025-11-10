@@ -388,7 +388,7 @@ function SiteContentEditor() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const docRef = useMemo(() => firestore ? doc(firestore, 'site_content', 'main') : null, [firestore]);
-    const { data: content, loading } = useDoc(docRef, { listen: true });
+    const { data: content, loading, error } = useDoc(docRef, { listen: true });
 
     const [formData, setFormData] = useState({
         heroImageUrl: '',
@@ -400,6 +400,19 @@ function SiteContentEditor() {
     const [editingLink, setEditingLink] = useState<SocialLink | null>(null);
 
     useEffect(() => {
+        if (!docRef) return;
+        
+        // One-time effect to populate default links if they don't exist
+        if (content && content.socialLinks === undefined) {
+             const defaultSocials = [
+                { id: '1', name: 'VK', url: 'https://vk.com/kkonk' },
+                { id: '2', name: 'YouTube', url: 'https://www.youtube.com/@KorotkoONeKorotkom' },
+                { id: '3', name: 'Kick', url: 'https://kick.com/korotkokonk' },
+                { id: '4', name: 'VK Live', url: 'https://live.vkvideo.ru/konk' },
+            ];
+            updateDoc(docRef, { socialLinks: defaultSocials });
+        }
+
         if (content) {
             setFormData({
                 heroImageUrl: content.heroImageUrl || '',
@@ -408,7 +421,7 @@ function SiteContentEditor() {
             });
             setSocialLinks(content.socialLinks || []);
         }
-    }, [content]);
+    }, [content, docRef]);
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -476,6 +489,18 @@ function SiteContentEditor() {
     
     if (loading) {
         return <Skeleton className="h-[400px] w-full" />
+    }
+     if (error) {
+        return (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Ошибка загрузки контента</AlertTitle>
+                <AlertDescription>
+                   Не удалось получить данные для редактирования.
+                    <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
+                </AlertDescription>
+            </Alert>
+        )
     }
     
     const objectFitOptions = ['cover', 'contain', 'fill', 'none', 'scale-down'];
