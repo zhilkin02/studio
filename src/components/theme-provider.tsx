@@ -7,9 +7,9 @@ import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 
-function useSystemTheme() {
+function SystemThemeLoader() {
     const firestore = useFirestore();
-    const { theme } = useTheme();
+    const { theme, systemTheme } = useTheme();
     
     const themeDocRef = React.useMemo(() => {
         if (!firestore) return null;
@@ -19,53 +19,68 @@ function useSystemTheme() {
     const { data: themeSettings } = useDoc(themeDocRef, { listen: true });
 
     React.useEffect(() => {
-        if (theme === 'system' && themeSettings && document.documentElement) {
-             const root = document.documentElement.style;
-             root.setProperty('--background', themeSettings.background || '240 5% 8%');
-             root.setProperty('--foreground', themeSettings.foreground || '0 0% 98%');
-             root.setProperty('--card', themeSettings.card || '240 5% 12%');
-             root.setProperty('--card-foreground', themeSettings.cardForeground || '0 0% 98%');
-             root.setProperty('--popover', themeSettings.popover || '240 5% 8%');
-             root.setProperty('--popover-foreground', themeSettings.popoverForeground || '0 0% 98%');
-             root.setProperty('--primary', themeSettings.primary || '262 80% 60%');
-             root.setProperty('--primary-foreground', themeSettings.primaryForeground || '0 0% 98%');
-             root.setProperty('--secondary', themeSettings.secondary || '240 5% 15%');
-             root.setProperty('--secondary-foreground', themeSettings.secondaryForeground || '0 0% 98%');
-             root.setProperty('--muted', themeSettings.muted || '240 5% 15%');
-             root.setProperty('--muted-foreground', themeSettings.mutedForeground || '0 0% 63.9%');
-             root.setProperty('--accent', themeSettings.accent || '190 95% 55%');
-             root.setProperty('--accent-foreground', themeSettings.accentForeground || '240 5% 8%');
-             root.setProperty('--destructive', themeSettings.destructive || '0 62.8% 30.6%');
-             root.setProperty('--destructive-foreground', themeSettings.destructiveForeground || '0 0% 98%');
-             root.setProperty('--border', themeSettings.border || '240 5% 20%');
-             root.setProperty('--input', themeSettings.input || '240 5% 20%');
-             root.setProperty('--ring', themeSettings.ring || '262 80% 60%');
+        // We only apply custom styles when the user has selected the "system" theme.
+        if (theme !== 'system' || !themeSettings || !document.documentElement) {
+            return;
+        }
+
+        const root = document.documentElement;
+
+        const applyStyles = (settings: any) => {
+             root.style.setProperty('--background', settings.background || '240 5% 8%');
+             root.style.setProperty('--foreground', settings.foreground || '0 0% 98%');
+             root.style.setProperty('--card', settings.card || '240 5% 12%');
+             root.style.setProperty('--card-foreground', settings.cardForeground || '0 0% 98%');
+             root.style.setProperty('--popover', settings.popover || '240 5% 8%');
+             root.style.setProperty('--popover-foreground', settings.popoverForeground || '0 0% 98%');
+             root.style.setProperty('--primary', settings.primary || '262 80% 60%');
+             root.style.setProperty('--primary-foreground', settings.primaryForeground || '0 0% 98%');
+             root.style.setProperty('--secondary', settings.secondary || '240 5% 15%');
+             root.style.setProperty('--secondary-foreground', settings.secondaryForeground || '0 0% 98%');
+             root.style.setProperty('--muted', settings.muted || '240 5% 15%');
+             root.style.setProperty('--muted-foreground', settings.mutedForeground || '0 0% 63.9%');
+             root.style.setProperty('--accent', settings.accent || '190 95% 55%');
+             root.style.setProperty('--accent-foreground', settings.accentForeground || '240 5% 8%');
+             root.style.setProperty('--destructive', settings.destructive || '0 62.8% 30.6%');
+             root.style.setProperty('--destructive-foreground', settings.destructiveForeground || '0 0% 98%');
+             root.style.setProperty('--border', settings.border || '240 5% 20%');
+             root.style.setProperty('--input', settings.input || '240 5% 20%');
+             root.style.setProperty('--ring', settings.ring || '262 80% 60%');
+             
              // Opacity variables
-             root.setProperty('--background-opacity', (themeSettings.backgroundOpacity ?? 1).toString());
-             root.setProperty('--card-opacity', (themeSettings.cardOpacity ?? 1).toString());
-             root.setProperty('--popover-opacity', (themeSettings.popoverOpacity ?? 1).toString());
-             root.setProperty('--muted-opacity', (themeSettings.mutedOpacity ?? 1).toString());
-             root.setProperty('--primary-opacity', (themeSettings.primaryOpacity ?? 1).toString());
-        } else if (theme === 'light' || theme === 'dark') {
-            // When not in system theme, remove the inline styles to let the CSS classes take over.
+             root.style.setProperty('--background-opacity', (settings.backgroundOpacity ?? 1).toString());
+             root.style.setProperty('--card-opacity', (settings.cardOpacity ?? 1).toString());
+             root.style.setProperty('--popover-opacity', (settings.popoverOpacity ?? 1).toString());
+             root.style.setProperty('--muted-opacity', (settings.mutedOpacity ?? 1).toString());
+             root.style.setProperty('--primary-opacity', (settings.primaryOpacity ?? 1).toString());
+        };
+
+        applyStyles(themeSettings);
+        
+        // next-themes applies the 'dark' or 'light' class based on system preference
+        // when theme is 'system'. We apply our custom theme on top of that.
+        // We don't want to clear styles when the underlying system theme changes.
+        // This effect should only re-run if the user-selected theme or the settings from Firestore change.
+
+    }, [theme, themeSettings]);
+
+    // This effect is responsible for CLEARING styles when switching AWAY from system theme.
+    React.useEffect(() => {
+        if (theme === 'light' || theme === 'dark') {
             document.documentElement.style.cssText = '';
         }
-    }, [theme, themeSettings]);
-}
+    }, [theme]);
 
 
-function ThemeController({ children }: { children: React.ReactNode}) {
-    useSystemTheme();
-    return <>{children}</>;
+    return null; // This component doesn't render anything
 }
 
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
-        <ThemeController>
-            {children}
-        </ThemeController>
+        {children}
+        <SystemThemeLoader />
     </NextThemesProvider>
   )
 }
