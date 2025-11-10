@@ -101,13 +101,6 @@
       "type": "object",
       "description": "Stores editable text content for various parts of the site.",
       "properties": {
-        "content": {
-          "type": "object",
-          "description": "A key-value map of text snippets, where the key is the identifier (e.g., 'home_title').",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
         "footer_text": {
           "type": "string",
           "description": "Text content for the site footer."
@@ -128,6 +121,23 @@
         "heroImageObjectPosition": {
             "type": "string",
             "description": "The object-position property for the hero image (e.g., 'center', 'top right')."
+        },
+        "socialLinks": {
+          "type": "array",
+          "description": "A list of social media links for the footer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            },
+            "required": ["id", "name", "url"]
+          }
+        },
+        "creatorCredit": {
+          "type": "string",
+          "description": "Credit text for the site creator, displayed in the footer."
         }
       }
     }
