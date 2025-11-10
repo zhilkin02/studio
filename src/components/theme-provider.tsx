@@ -7,36 +7,40 @@ import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 
-function createThemeCss(settings: any): string | null {
-    if (!settings) return null;
-    
-    // This function now correctly handles both HSL strings and opacity numbers
-    const props = Object.entries(settings)
-        .map(([key, value]) => {
-            if (key.endsWith('Hex')) {
-                const baseKey = key.replace(/Hex$/, '');
-                // Check if the HSL value exists. If not, this property will be skipped.
-                if (settings[baseKey]) {
-                     return `--${baseKey.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${settings[baseKey]}`;
-                }
-            } else if (key.endsWith('Opacity')) {
-                 const baseKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-                 return `--${baseKey}: ${value}`;
-            }
-            return null;
-        })
-        .filter(Boolean); // Filter out null values
+function applyTheme(settings: any) {
+  if (!settings || typeof document === 'undefined') return;
 
-    return props.join('; ');
+  Object.entries(settings).forEach(([key, value]) => {
+    if (key.endsWith('Hex')) return; // Skip hex values
+    if (value && typeof value === 'string') {
+      const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      document.documentElement.style.setProperty(cssVar, value);
+    } else if (value && typeof value === 'number') {
+        const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+        document.documentElement.style.setProperty(cssVar, value.toString());
+    }
+  });
+}
+
+function clearTheme() {
+    if (typeof document === 'undefined') return;
+    const style = document.documentElement.style;
+    const propertiesToRemove: string[] = [];
+
+    for (let i = 0; i < style.length; i++) {
+        const prop = style[i];
+        if(prop.startsWith('--')) {
+             propertiesToRemove.push(prop);
+        }
+    }
+    propertiesToRemove.forEach(prop => style.removeProperty(prop));
 }
 
 
-function CustomThemeApplier() {
+function ThemeStyleApplicator() {
     const firestore = useFirestore();
-    // useTheme() is now correctly used inside a child of NextThemesProvider
-    const { theme } = useTheme();
-    const [isMounted, setIsMounted] = React.useState(false);
-
+    const { resolvedTheme } = useTheme();
+    
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
 
@@ -44,42 +48,24 @@ function CustomThemeApplier() {
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
     React.useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    React.useEffect(() => {
-        if (!isMounted) return;
-
-        const lightThemeCss = createThemeCss(lightThemeSettings);
-        const darkThemeCss = createThemeCss(darkThemeSettings);
-        
-        let lightStyleTag = document.getElementById('dynamic-light-theme');
-        if (!lightStyleTag) {
-            lightStyleTag = document.createElement('style');
-            lightStyleTag.id = 'dynamic-light-theme';
-            document.head.appendChild(lightStyleTag);
+        clearTheme(); // Clear old styles before applying new ones
+        if (resolvedTheme === 'dark' && darkThemeSettings) {
+            applyTheme(darkThemeSettings);
+        } else if (resolvedTheme === 'light' && lightThemeSettings) {
+            applyTheme(lightThemeSettings);
         }
-        lightStyleTag.innerHTML = lightThemeCss ? `.light { ${lightThemeCss} }` : '';
-
-        let darkStyleTag = document.getElementById('dynamic-dark-theme');
-        if (!darkStyleTag) {
-            darkStyleTag = document.createElement('style');
-            darkStyleTag.id = 'dynamic-dark-theme';
-            document.head.appendChild(darkStyleTag);
-        }
-        darkStyleTag.innerHTML = darkThemeCss ? `.dark { ${darkThemeCss} }` : '';
         
-    // We listen to changes in settings and mounted state
-    }, [isMounted, lightThemeSettings, darkThemeSettings]);
+        // This effect should re-run whenever the theme or the settings change.
+    }, [resolvedTheme, lightThemeSettings, darkThemeSettings]);
 
-  return null; // This component does not render anything itself
+    return null; // This component does not render anything.
 }
 
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
-      <CustomThemeApplier />
+      <ThemeStyleApplicator />
       {children}
     </NextThemesProvider>
   )
