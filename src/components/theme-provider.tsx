@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 import { type ThemeProviderProps } from "next-themes/dist/types"
 import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
@@ -29,8 +29,9 @@ function createThemeCss(settings: any): string | null {
 }
 
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+function CustomThemeApplier() {
     const firestore = useFirestore();
+    const { resolvedTheme } = useTheme();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -38,15 +39,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     const { data: lightThemeSettings } = useDoc(lightThemeRef, { listen: true });
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
-    const [isMounted, setIsMounted] = React.useState(false);
-    
     React.useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    React.useEffect(() => {
-        if (!isMounted) return;
-
         const lightThemeCss = createThemeCss(lightThemeSettings);
         const darkThemeCss = createThemeCss(darkThemeSettings);
         
@@ -66,10 +59,16 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         }
         darkStyleTag.innerHTML = darkThemeCss ? `.dark { ${darkThemeCss} }` : '';
 
-    }, [isMounted, lightThemeSettings, darkThemeSettings]);
+    }, [lightThemeSettings, darkThemeSettings]);
 
+  return null;
+}
+
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
+      <CustomThemeApplier />
       {children}
     </NextThemesProvider>
   )
