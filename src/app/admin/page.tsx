@@ -5,12 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Users, User, Shield, Palette, FileText, Save } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Users, User, Shield, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +22,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -403,8 +404,12 @@ function SiteContentEditor() {
         }
     }, [content]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string) => (value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
     
@@ -445,6 +450,10 @@ function SiteContentEditor() {
     if (loading) {
         return <Skeleton className="h-[400px] w-full" />
     }
+    
+    const objectFitOptions = ['cover', 'contain', 'fill', 'none', 'scale-down'];
+    const objectPositionOptions = ['center', 'top', 'bottom', 'left', 'right', 'top left', 'top right', 'bottom left', 'bottom right'];
+
 
     return (
          <Card>
@@ -469,18 +478,34 @@ function SiteContentEditor() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="heroImageUrl">URL главного изображения</Label>
-                    <Input id="heroImageUrl" name="heroImageUrl" value={formData.heroImageUrl} onChange={handleChange} />
+                    <Input id="heroImageUrl" name="heroImageUrl" value={formData.heroImageUrl} onChange={handleChange} placeholder="https://images.unsplash.com/..." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="heroImageObjectFit">Растягивание изображения (object-fit)</Label>
-                        <Input id="heroImageObjectFit" name="heroImageObjectFit" value={formData.heroImageObjectFit} onChange={handleChange} />
-                        <p className="text-xs text-muted-foreground">Напр: cover, contain, fill</p>
+                        <Label htmlFor="heroImageObjectFit">Растягивание (object-fit)</Label>
+                        <Select value={formData.heroImageObjectFit} onValueChange={handleSelectChange('heroImageObjectFit')}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Выберите значение" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {objectFitOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="heroImageObjectPosition">Позиция изображения (object-position)</Label>
-                        <Input id="heroImageObjectPosition" name="heroImageObjectPosition" value={formData.heroImageObjectPosition} onChange={handleChange} />
-                         <p className="text-xs text-muted-foreground">Напр: center, top, right bottom</p>
+                        <Label htmlFor="heroImageObjectPosition">Позиция (object-position)</Label>
+                        <Select value={formData.heroImageObjectPosition} onValueChange={handleSelectChange('heroImageObjectPosition')}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Выберите значение" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {objectPositionOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </CardContent>
@@ -494,61 +519,8 @@ function SiteContentEditor() {
     );
 }
 
-function ThemeCustomizer({ initialCssContent }: { initialCssContent: string }) {
-    const [cssContent, setCssContent] = useState(initialCssContent);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
 
-    useEffect(() => {
-        setCssContent(initialCssContent);
-    }, [initialCssContent]);
-
-
-    const handleSave = () => {
-        setIsSubmitting(true);
-        toast({
-            title: "Сохранение...",
-            description: "Пожалуйста, подтвердите изменение в следующем сообщении, чтобы я мог перезаписать файл globals.css."
-        });
-        console.log("Содержимое для сохранения в globals.css:", cssContent);
-        
-        setTimeout(() => {
-            setIsSubmitting(false);
-            toast({
-                title: "Готово к сохранению",
-                description: "Теперь попросите меня сохранить изменения."
-            });
-        }, 1000);
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Редактор CSS</CardTitle>
-                <CardDescription>
-                    Редактируйте содержимое файла <code className="font-mono bg-muted px-1 py-0.5 rounded">src/app/globals.css</code> напрямую.
-                    Изменения будут применены ко всему сайту после сохранения.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Textarea
-                    value={cssContent}
-                    onChange={(e) => setCssContent(e.target.value)}
-                    className="h-96 font-mono text-xs"
-                    placeholder="Загрузка CSS..."
-                />
-            </CardContent>
-            <CardFooter>
-                 <Button onClick={handleSave} disabled={isSubmitting}>
-                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Сохранить globals.css
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-}
-
-export default function AdminPageClient({ cssContent }: { cssContent: string }) {
+export default function AdminPage() {
     const { user, loading } = useUser();
     const router = useRouter();
 
@@ -575,11 +547,10 @@ export default function AdminPageClient({ cssContent }: { cssContent: string }) 
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
             <TabsTrigger value="content"><FileText className="mr-2 h-4 w-4" />Контент</TabsTrigger>
-            <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" />Внешний вид</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
@@ -589,9 +560,6 @@ export default function AdminPageClient({ cssContent }: { cssContent: string }) 
         </TabsContent>
          <TabsContent value="content" className="mt-6">
             <SiteContentEditor />
-        </TabsContent>
-        <TabsContent value="appearance" className="mt-6">
-            <ThemeCustomizer initialCssContent={cssContent} />
         </TabsContent>
       </Tabs>
     </div>

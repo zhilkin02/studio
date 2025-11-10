@@ -178,7 +178,7 @@ export default function Home() {
 
   const { data: videos, loading, error } = useCollection(videosQuery);
   const contentDocRef = useMemo(() => firestore ? doc(firestore, 'site_content', 'main') : null, [firestore]);
-  const { data: content, loading: contentLoading } = useDoc(contentDocRef);
+  const { data: content, loading: contentLoading } = useDoc(contentDocRef, { listen: true });
   
   const heroImageUrl = content?.heroImageUrl || PlaceHolderImages.find(p => p.id === 'hero-1')?.imageUrl;
   const heroImageObjectFit = content?.heroImageObjectFit || 'cover';
@@ -242,7 +242,7 @@ export default function Home() {
   return (
     <>
       <section className="relative w-full h-48 md:h-64 -mx-4 sm:mx-0">
-          {contentLoading ? <Skeleton className="w-full h-full" /> : (
+          {contentLoading || !heroImageUrl ? <Skeleton className="w-full h-full" /> : (
                 <Image
                   src={heroImageUrl}
                   alt="Hero image"
