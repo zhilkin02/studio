@@ -867,7 +867,7 @@ function UserManagement() {
                     <Skeleton className="h-4 w-2/3 mt-2" />
                 </CardHeader>
                 <CardContent>
-                    {[...Array(3)].map(i => (
+                    {[...Array(3)].map((_, i) => (
                         <div key={i} className="flex items-center space-x-4 p-2">
                             <Skeleton className="h-12 w-12 rounded-full" />
                             <div className="space-y-2">
