@@ -550,11 +550,7 @@ function ThemeCustomizer({ initialCssContent }: { initialCssContent: string }) {
     );
 }
 
-export default function AdminPage({
-  cssContent,
-}: {
-  cssContent: string;
-}) {
+function AdminPageClient({ cssContent }: { cssContent: string }) {
     const { user, loading } = useUser();
     const router = useRouter();
 
@@ -604,13 +600,15 @@ export default function AdminPage({
   );
 }
 
-export async function getServerSideProps() {
-  const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
-  const cssContent = fs.readFileSync(cssFilePath, 'utf8');
 
-  return {
-    props: {
-      cssContent,
-    },
-  };
+export default async function AdminPage() {
+    let cssContent = '';
+    try {
+        const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
+        cssContent = fs.readFileSync(cssFilePath, 'utf8');
+    } catch (error) {
+        console.error("Could not read globals.css:", error);
+    }
+
+    return <AdminPageClient cssContent={cssContent} />;
 }
