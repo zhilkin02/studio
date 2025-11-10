@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { type ThemeProviderProps } from "next-themes/dist/types"
 import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
@@ -43,8 +43,7 @@ function generateThemeCss(themeSettings: any): string {
     return `${cssVars}; ${opacityVars};`;
 }
 
-
-function CustomThemeApplier() {
+function ThemeApplicator({ children }: { children: React.ReactNode }) {
     const firestore = useFirestore();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
@@ -53,27 +52,38 @@ function CustomThemeApplier() {
     const { data: lightThemeSettings } = useDoc(lightThemeRef, { listen: true });
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
-    const lightThemeCss = React.useMemo(() => generateThemeCss(lightThemeSettings), [lightThemeSettings]);
-    const darkThemeCss = React.useMemo(() => generateThemeCss(darkThemeSettings), [darkThemeSettings]);
+    React.useEffect(() => {
+        const lightThemeCss = generateThemeCss(lightThemeSettings);
+        let lightStyleTag = document.getElementById('light-theme-vars');
+        if (!lightStyleTag) {
+            lightStyleTag = document.createElement('style');
+            lightStyleTag.id = 'light-theme-vars';
+            document.head.appendChild(lightStyleTag);
+        }
+        lightStyleTag.innerHTML = lightThemeCss ? `.light { ${lightThemeCss} }` : '';
 
-    return (
-      <>
-        <style id="light-theme-vars">
-            {lightThemeCss && `.light { ${lightThemeCss} }`}
-        </style>
-        <style id="dark-theme-vars">
-            {darkThemeCss && `.dark { ${darkThemeCss} }`}
-        </style>
-      </>
-    );
+    }, [lightThemeSettings]);
+
+    React.useEffect(() => {
+        const darkThemeCss = generateThemeCss(darkThemeSettings);
+        let darkStyleTag = document.getElementById('dark-theme-vars');
+        if (!darkStyleTag) {
+            darkStyleTag = document.createElement('style');
+            darkStyleTag.id = 'dark-theme-vars';
+            document.head.appendChild(darkStyleTag);
+        }
+        darkStyleTag.innerHTML = darkThemeCss ? `.dark { ${darkThemeCss} }` : '';
+    }, [darkThemeSettings]);
+
+
+    return <>{children}</>;
 }
 
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
-        <CustomThemeApplier />
-        {children}
+      <ThemeApplicator>{children}</ThemeApplicator>
     </NextThemesProvider>
   )
 }
