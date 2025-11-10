@@ -266,6 +266,9 @@ const appearanceFormSchema = z.object({
   cardForegroundHex: hexColor,
   popoverHex: hexColor,
   popoverForegroundHex: hexColor,
+  backgroundOpacity: z.number().min(0).max(1),
+  cardOpacity: z.number().min(0).max(1),
+  popoverOpacity: z.number().min(0).max(1),
 });
 
 const defaultDarkTheme = {
@@ -288,6 +291,9 @@ const defaultDarkTheme = {
     cardForegroundHex: '#f9fafb',
     popoverHex: '#1f2937',
     popoverForegroundHex: '#f9fafb',
+    backgroundOpacity: 1,
+    cardOpacity: 1,
+    popoverOpacity: 1,
 }
 
 const defaultLightTheme = {
@@ -310,6 +316,9 @@ const defaultLightTheme = {
     cardForegroundHex: '#020617',
     popoverHex: '#ffffff',
     popoverForegroundHex: '#020617',
+    backgroundOpacity: 1,
+    cardOpacity: 1,
+    popoverOpacity: 1,
 }
 
 
@@ -327,25 +336,8 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
     useEffect(() => {
         if (themeData) {
             form.reset({
-                primaryHex: themeData.primaryHex || defaultValues.primaryHex,
-                secondaryHex: themeData.secondaryHex || defaultValues.secondaryHex,
-                backgroundHex: themeData.backgroundHex || defaultValues.backgroundHex,
-                foregroundHex: themeData.foregroundHex || defaultValues.foregroundHex,
-                accentHex: themeData.accentHex || defaultValues.accentHex,
-                mutedHex: themeData.mutedHex || defaultValues.mutedHex,
-                destructiveHex: themeData.destructiveHex || defaultValues.destructiveHex,
-                cardHex: themeData.cardHex || defaultValues.cardHex,
-                borderHex: themeData.borderHex || defaultValues.borderHex,
-                inputHex: themeData.inputHex || defaultValues.inputHex,
-                ringHex: themeData.ringHex || defaultValues.ringHex,
-                primaryForegroundHex: themeData.primaryForegroundHex || defaultValues.primaryForegroundHex,
-                secondaryForegroundHex: themeData.secondaryForegroundHex || defaultValues.secondaryForegroundHex,
-                accentForegroundHex: themeData.accentForegroundHex || defaultValues.accentForegroundHex,
-                mutedForegroundHex: themeData.mutedForegroundHex || defaultValues.mutedForegroundHex,
-                destructiveForegroundHex: themeData.destructiveForegroundHex || defaultValues.destructiveForegroundHex,
-                cardForegroundHex: themeData.cardForegroundHex || defaultValues.cardForegroundHex,
-                popoverHex: themeData.popoverHex || defaultValues.popoverHex,
-                popoverForegroundHex: themeData.popoverForegroundHex || defaultValues.popoverForegroundHex,
+                ...defaultValues,
+                ...themeData
             });
         } else {
              form.reset(defaultValues);
@@ -374,6 +366,9 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
         '--border': hexToHsl(watchedValues.borderHex ?? ''),
         '--input': hexToHsl(watchedValues.inputHex ?? ''),
         '--ring': hexToHsl(watchedValues.ringHex ?? ''),
+        '--background-opacity': watchedValues.backgroundOpacity,
+        '--card-opacity': watchedValues.cardOpacity,
+        '--popover-opacity': watchedValues.popoverOpacity,
     } as React.CSSProperties;
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
@@ -436,6 +431,33 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
         />
     );
 
+    const OpacitySlider = ({ name, label }: { name: "backgroundOpacity" | "cardOpacity" | "popoverOpacity", label: string }) => (
+         <FormField
+            control={form.control}
+            name={name}
+            render={({ field }) => (
+                <FormItem>
+                    <div className="flex justify-between items-center">
+                        <FormLabel>{label}</FormLabel>
+                        <span className="text-sm text-muted-foreground">{Math.round((field.value as number) * 100)}%</span>
+                    </div>
+                    <FormControl>
+                        <Slider
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={[field.value as number]}
+                            onValueChange={(vals) => field.onChange(vals[0])}
+                            disabled={isSubmitting}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -463,6 +485,16 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
                           </div>
                     </div>
                     
+                     <Separator />
+                     <div>
+                         <h3 className="text-lg font-medium mb-4">Прозрачность</h3>
+                          <div className="space-y-4">
+                             <OpacitySlider name="backgroundOpacity" label="Прозрачность фона" />
+                             <OpacitySlider name="cardOpacity" label="Прозрачность карточек" />
+                             <OpacitySlider name="popoverOpacity" label="Прозрачность поповеров" />
+                          </div>
+                    </div>
+
                     <Separator />
                      <div>
                          <h3 className="text-lg font-medium mb-4">Компоненты</h3>

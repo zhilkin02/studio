@@ -23,18 +23,35 @@ function CustomThemeApplier() {
 
         const applyTheme = (settings: any) => {
             if (!settings) return;
+
+            // Clear any previously applied inline styles to avoid conflicts
+            root.style.cssText = '';
+
             Object.keys(settings).forEach(key => {
                  if (key.endsWith('Hex')) {
                     const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase().replace('-hex', '')}`;
                     root.style.setProperty(cssVar, settings[key.replace('Hex', '')]);
+                } else if (key.endsWith('Opacity')) {
+                    const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+                    root.style.setProperty(cssVar, settings[key]);
                 }
             });
         };
-
+        
         if (theme === 'light' && lightThemeSettings) {
             applyTheme(lightThemeSettings);
         } else if (theme === 'dark' && darkThemeSettings) {
             applyTheme(darkThemeSettings);
+        } else if (theme === 'system') {
+            // For system theme, we need to know if the system is in light or dark mode
+            const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (systemIsDark && darkThemeSettings) {
+                applyTheme(darkThemeSettings);
+            } else if (!systemIsDark && lightThemeSettings) {
+                 applyTheme(lightThemeSettings);
+            } else {
+                 root.style.cssText = '';
+            }
         }
         
     }, [theme, lightThemeSettings, darkThemeSettings]);
@@ -46,8 +63,8 @@ function CustomThemeApplier() {
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
-        {children}
         <CustomThemeApplier />
+        {children}
     </NextThemesProvider>
   )
 }
