@@ -270,7 +270,7 @@ const appearanceFormSchema = z.object({
   primaryOpacity: z.number().min(0).max(1),
   heroImageUrl: z.string().url("Неверный URL.").or(z.literal('')),
   heroImageObjectFit: z.enum(['cover', 'contain', 'fill', 'none', 'scale-down']),
-  heroImageObjectPosition: z.string().max(50, "Слишком длинное значение.").optional(),
+  heroImageObjectPosition: z.enum(['center', 'top', 'bottom', 'left', 'right', 'left top', 'right top', 'left bottom', 'right bottom']),
 });
 
 
@@ -607,10 +607,25 @@ function AppearanceSettings() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Позиционирование</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} disabled={isSubmitting} placeholder="center, top right, 50% 25%..." />
-                                            </FormControl>
-                                            <FormDescription>Фокусная точка изображения. Например: `top`, `bottom`, `left`, `right`, `center`.</FormDescription>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                 <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Выберите фокус..." />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="center">Центр</SelectItem>
+                                                    <SelectItem value="top">Верх</SelectItem>
+                                                    <SelectItem value="bottom">Низ</SelectItem>
+                                                    <SelectItem value="left">Лево</SelectItem>
+                                                    <SelectItem value="right">Право</SelectItem>
+                                                    <SelectItem value="left top">Лево / Верх</SelectItem>
+                                                    <SelectItem value="right top">Право / Верх</SelectItem>
+                                                    <SelectItem value="left bottom">Лево / Низ</SelectItem>
+                                                    <SelectItem value="right bottom">Право / Низ</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>Фокусная точка изображения.</FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
