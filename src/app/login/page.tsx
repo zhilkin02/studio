@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 function GoogleIcon() {
     return (
@@ -17,20 +18,45 @@ function GoogleIcon() {
     )
 }
 
+// Function to create user profile if it doesn't exist
+const createUserProfile = async (firestore: any, user: User) => {
+    const userRef = doc(firestore, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        const { uid, email, displayName, photoURL } = user;
+        try {
+            await setDoc(userRef, {
+                id: uid,
+                email,
+                displayName,
+                photoURL,
+                registrationDate: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error("Error creating user profile:", error);
+            // We can decide if we want to bubble this error up to the user
+        }
+    }
+};
+
 export default function LoginPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = () => {
-    if (!auth) {
-        setError("Сервис аутентификации еще не инициализирован.");
+    if (!auth || !firestore) {
+        setError("Сервис аутентификации или база данных еще не инициализированы.");
         return;
     };
     setError(null);
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
-      .then(() => {
+      .then(async (result) => {
+        // Create user profile document on first sign in
+        await createUserProfile(firestore, result.user);
         router.push('/profile');
       })
       .catch((error: any) => {

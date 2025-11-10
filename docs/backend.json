@@ -10,31 +10,30 @@
           "type": "string",
           "description": "Unique identifier for the User entity."
         },
-        "username": {
+        "displayName": {
           "type": "string",
-          "description": "The user's username."
+          "description": "The user's display name."
         },
         "email": {
           "type": "string",
           "description": "The user's email address.",
           "format": "email"
         },
+        "photoURL": {
+            "type": "string",
+            "format": "uri",
+            "description": "The user's profile picture URL."
+        },
         "registrationDate": {
           "type": "string",
           "description": "The date and time the user registered.",
           "format": "date-time"
-        },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Indicates whether the user has administrator privileges."
         }
       },
       "required": [
         "id",
-        "username",
         "email",
-        "registrationDate",
-        "isAdmin"
+        "registrationDate"
       ]
     },
     "VideoFragment": {
