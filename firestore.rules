@@ -40,9 +40,11 @@ service cloud.firestore {
     }
 
     // --- User-Specific Content ---
-    // A user can read and write to their own user profile. No one else can.
+    // A user can read and write to their own user profile.
+    // Admins can list all users.
     match /users/{userId} {
       allow read, write: if isOwner(userId);
+      allow list: if isAdmin();
     }
     
     // --- Pending Content for Admin Review ---
