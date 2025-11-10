@@ -10,10 +10,12 @@ import { useFirestore } from "@/firebase"
 function createThemeCss(settings: any): string | null {
     if (!settings) return null;
     
+    // This function now correctly handles both HSL strings and opacity numbers
     const props = Object.entries(settings)
         .map(([key, value]) => {
             if (key.endsWith('Hex')) {
                 const baseKey = key.replace(/Hex$/, '');
+                // Check if the HSL value exists. If not, this property will be skipped.
                 if (settings[baseKey]) {
                      return `--${baseKey.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${settings[baseKey]}`;
                 }
@@ -23,7 +25,7 @@ function createThemeCss(settings: any): string | null {
             }
             return null;
         })
-        .filter(Boolean);
+        .filter(Boolean); // Filter out null values
 
     return props.join('; ');
 }
@@ -31,7 +33,9 @@ function createThemeCss(settings: any): string | null {
 
 function CustomThemeApplier() {
     const firestore = useFirestore();
-    const { resolvedTheme } = useTheme();
+    // useTheme() is now correctly used inside a child of NextThemesProvider
+    const { theme } = useTheme();
+    const [isMounted, setIsMounted] = React.useState(false);
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -40,6 +44,12 @@ function CustomThemeApplier() {
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
     React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    React.useEffect(() => {
+        if (!isMounted) return;
+
         const lightThemeCss = createThemeCss(lightThemeSettings);
         const darkThemeCss = createThemeCss(darkThemeSettings);
         
@@ -58,10 +68,11 @@ function CustomThemeApplier() {
             document.head.appendChild(darkStyleTag);
         }
         darkStyleTag.innerHTML = darkThemeCss ? `.dark { ${darkThemeCss} }` : '';
+        
+    // We listen to changes in settings and mounted state
+    }, [isMounted, lightThemeSettings, darkThemeSettings]);
 
-    }, [lightThemeSettings, darkThemeSettings]);
-
-  return null;
+  return null; // This component does not render anything itself
 }
 
 
