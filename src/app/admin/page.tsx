@@ -10,7 +10,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Users, User, Shield, FileText, Trash2, PlusCircle, Globe, LinkIcon } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Users, User, Shield, FileText, Trash2, PlusCircle, Globe, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -394,7 +394,6 @@ function SiteContentEditor() {
         heroImageUrl: '',
         heroImageObjectFit: 'cover',
         heroImageObjectPosition: 'center',
-        creatorCredit: '',
     });
     
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -406,7 +405,6 @@ function SiteContentEditor() {
                 heroImageUrl: content.heroImageUrl || '',
                 heroImageObjectFit: content.heroImageObjectFit || 'cover',
                 heroImageObjectPosition: content.heroImageObjectPosition || 'center',
-                creatorCredit: content.creatorCredit || 'Создатель сайта Fox2099',
             });
             setSocialLinks(content.socialLinks || []);
         }
@@ -490,7 +488,7 @@ function SiteContentEditor() {
             <CardHeader>
                 <CardTitle>Контент на главной странице</CardTitle>
                 <CardDescription>
-                    Здесь можно изменить фоновое изображение, тексты и ссылки в подвале. Тексты заголовков редактируются прямо на главной странице.
+                    Здесь можно изменить фоновое изображение и ссылки в подвале. Тексты заголовков и подписи редактируются прямо на главной странице.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -525,10 +523,6 @@ function SiteContentEditor() {
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="creatorCredit">Подпись создателя</Label>
-                    <Input id="creatorCredit" name="creatorCredit" value={formData.creatorCredit} onChange={handleFormChange} />
                 </div>
             </CardContent>
         </Card>
@@ -638,3 +632,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+      
