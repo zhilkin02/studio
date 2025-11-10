@@ -23,6 +23,8 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import fs from 'fs';
+import path from 'path';
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -494,93 +496,31 @@ function SiteContentEditor() {
     );
 }
 
-const initialCssContent = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 220 20% 98%;
-    --foreground: 240 5% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 5% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 5% 8%;
-    --primary: 262 80% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 5% 90%;
-    --secondary-foreground: 240 5% 8%;
-    --muted: 240 5% 94%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 190 95% 45%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 85%;
-    --input: 240 5% 85%;
-    --ring: 262 80% 50%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 240 5% 8%;
-    --foreground: 0 0% 98%;
-    --card: 240 5% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 5% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 262 80% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 190 95% 55%;
-    --accent-foreground: 240 5% 8%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 20%;
-    --input: 240 5% 20%;
-    --ring: 262 80% 60%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: Arial, Helvetica, sans-serif;
-  }
-}
-`;
-
-function ThemeCustomizer() {
+function ThemeCustomizer({ initialCssContent }: { initialCssContent: string }) {
     const [cssContent, setCssContent] = useState(initialCssContent);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
-    // The 'handleSave' function is defined but will be called by the parent to trigger the change.
-    // This component only manages the state of the textarea.
-    // The actual file change happens when the AI assistant sends the <changes> block.
+    useEffect(() => {
+        setCssContent(initialCssContent);
+    }, [initialCssContent]);
+
 
     const handleSave = () => {
-        // This function is conceptually what happens when you click save.
-        // The AI will receive the user's intent to save and then create a change block.
-        // We simulate the start of this process here.
         setIsSubmitting(true);
         toast({
             title: "Сохранение...",
-            description: "Пожалуйста, подтвердите изменение в следующем сообщении."
+            description: "Пожалуйста, подтвердите изменение в следующем сообщении, чтобы я мог перезаписать файл globals.css."
         });
-        // In a real scenario, the AI would take `cssContent` and put it in a file change block.
-        // For this simulation, we'll just log it.
         console.log("Содержимое для сохранения в globals.css:", cssContent);
         
-        // You would typically see a follow-up from the assistant to apply the changes.
-        // Since we can't trigger that automatically, we'll just reset the state after a delay.
-        setTimeout(() => setIsSubmitting(false), 2000);
+        setTimeout(() => {
+            setIsSubmitting(false);
+            toast({
+                title: "Готово к сохранению",
+                description: "Теперь попросите меня сохранить изменения."
+            });
+        }, 1000);
     };
 
     return (
@@ -610,8 +550,11 @@ function ThemeCustomizer() {
     );
 }
 
-
-export default function AdminPage() {
+export default function AdminPage({
+  cssContent,
+}: {
+  cssContent: string;
+}) {
     const { user, loading } = useUser();
     const router = useRouter();
 
@@ -654,9 +597,20 @@ export default function AdminPage() {
             <SiteContentEditor />
         </TabsContent>
         <TabsContent value="appearance" className="mt-6">
-            <ThemeCustomizer />
+            <ThemeCustomizer initialCssContent={cssContent} />
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+export async function getServerSideProps() {
+  const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
+  const cssContent = fs.readFileSync(cssFilePath, 'utf8');
+
+  return {
+    props: {
+      cssContent,
+    },
+  };
 }
