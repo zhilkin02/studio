@@ -5,12 +5,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, getDoc, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Image as ImageIcon, Users, User, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -25,8 +25,11 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { setDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 
 function hexToHsl(hex: string): string | null {
@@ -780,6 +783,173 @@ function AppearanceSettings() {
     )
 }
 
+interface UserListItem {
+    id: string;
+    email?: string;
+    displayName?: string;
+    photoURL?: string;
+    isAdmin: boolean;
+}
+
+function UserManagement() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
+
+    const usersQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'users'));
+    }, [firestore]);
+
+    const adminRolesQuery = useMemo(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'roles_admin');
+    }, [firestore]);
+
+    const { data: users, loading: usersLoading, error: usersError } = useCollection(usersQuery, { listen: true });
+    const { data: adminRoles, loading: adminsLoading, error: adminsError } = useCollection(adminRolesQuery, { listen: true });
+
+    const adminIds = useMemo(() => new Set(adminRoles?.map(role => role.id)), [adminRoles]);
+
+    const combinedUsers: UserListItem[] = useMemo(() => {
+        if (!users) return [];
+        return users.map(user => ({
+            ...user,
+            id: user.id,
+            isAdmin: adminIds.has(user.id),
+        }));
+    }, [users, adminIds]);
+
+
+    const handleAdminToggle = async (userId: string, currentIsAdmin: boolean) => {
+        if (!firestore) return;
+        setTogglingAdmin(userId);
+        const user = combinedUsers.find(u => u.id === userId);
+
+        const roleRef = doc(firestore, 'roles_admin', userId);
+        const action = currentIsAdmin ? 'удаления' : 'назначения';
+        const roleName = user?.displayName || user?.email || userId;
+
+        try {
+            if (currentIsAdmin) {
+                await deleteDoc(roleRef);
+            } else {
+                await setDoc(roleRef, {});
+            }
+            toast({
+                title: 'Роль обновлена',
+                description: `Пользователь ${roleName} ${currentIsAdmin ? 'больше не администратор' : 'теперь администратор'}.`
+            });
+        } catch (e: any) {
+            const permissionError = new FirestorePermissionError({
+                path: roleRef.path,
+                operation: currentIsAdmin ? 'delete' : 'create',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                variant: 'destructive',
+                title: `Ошибка ${action} роли`,
+                description: e.message || 'Произошла неизвестная ошибка.',
+            });
+        } finally {
+            setTogglingAdmin(null);
+        }
+    };
+
+    const loading = usersLoading || adminsLoading;
+    const error = usersError || adminsError;
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-2/3 mt-2" />
+                </CardHeader>
+                <CardContent>
+                    {[...Array(3)].map(i => (
+                        <div key={i} className="flex items-center space-x-4 p-2">
+                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-[250px]" />
+                                <Skeleton className="h-4 w-[200px]" />
+                            </div>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (error) {
+        return (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Ошибка загрузки пользователей</AlertTitle>
+                <AlertDescription>
+                   Не удалось получить список пользователей или их роли.
+                    <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
+                </AlertDescription>
+            </Alert>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Управление пользователями</CardTitle>
+                <CardDescription>
+                    Назначайте или отзывайте права администратора у пользователей.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Пользователь</TableHead>
+                            <TableHead>Роль</TableHead>
+                            <TableHead className="text-right">Администратор</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {combinedUsers.map((user) => (
+                            <TableRow key={user.id}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar>
+                                            <AvatarImage src={user.photoURL} />
+                                            <AvatarFallback>{user.email?.[0]?.toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="font-medium">{user.displayName || 'Без имени'}</div>
+                                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    {user.isAdmin ? (
+                                        <Badge><Shield className="mr-1 h-3 w-3" />Админ</Badge>
+                                    ) : (
+                                        <Badge variant="outline"><User className="mr-1 h-3 w-3" />Пользователь</Badge>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Switch
+                                        checked={user.isAdmin}
+                                        onCheckedChange={() => handleAdminToggle(user.id, user.isAdmin)}
+                                        disabled={togglingAdmin === user.id}
+                                        aria-label={`Переключить права администратора для ${user.displayName}`}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function AdminPage() {
     const { user, loading } = useUser();
     const router = useRouter();
@@ -807,15 +977,19 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="moderation">Модерация</TabsTrigger>
             <TabsTrigger value="appearance">Внешний вид</TabsTrigger>
+            <TabsTrigger value="users">Пользователи</TabsTrigger>
         </TabsList>
         <TabsContent value="moderation" className="mt-6">
             <PendingVideosList />
         </TabsContent>
         <TabsContent value="appearance" className="mt-6">
             <AppearanceSettings />
+        </TabsContent>
+        <TabsContent value="users" className="mt-6">
+            <UserManagement />
         </TabsContent>
       </Tabs>
     </div>
