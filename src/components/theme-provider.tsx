@@ -7,54 +7,43 @@ import { useDoc } from "@/firebase/firestore/use-doc"
 import { doc } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 
-function setCssVariables(theme: 'light' | 'dark', settings: any) {
-    if (!settings) return;
-    const root = document.documentElement;
-
-    const themePrefix = `.${theme}`;
-    const styleId = `dynamic-${theme}-theme-styles`;
+function createThemeCss(settings: any): string | null {
+    if (!settings) return null;
     
-    let styleTag = document.getElementById(styleId);
-    if (!styleTag) {
-        styleTag = document.createElement('style');
-        styleTag.id = styleId;
-        document.head.appendChild(styleTag);
-    }
+    // Ensure all values exist to prevent "undefined" in CSS
+    const props = [
+        settings.background ? `--background: ${settings.background}` : null,
+        settings.foreground ? `--foreground: ${settings.foreground}` : null,
+        settings.card ? `--card: ${settings.card}` : null,
+        settings.cardForeground ? `--card-foreground: ${settings.cardForeground}` : null,
+        settings.popover ? `--popover: ${settings.popover}` : null,
+        settings.popoverForeground ? `--popover-foreground: ${settings.popoverForeground}` : null,
+        settings.primary ? `--primary: ${settings.primary}` : null,
+        settings.primaryForeground ? `--primary-foreground: ${settings.primaryForeground}` : null,
+        settings.secondary ? `--secondary: ${settings.secondary}` : null,
+        settings.secondaryForeground ? `--secondary-foreground: ${settings.secondaryForeground}` : null,
+        settings.muted ? `--muted: ${settings.muted}` : null,
+        settings.mutedForeground ? `--muted-foreground: ${settings.mutedForeground}` : null,
+        settings.accent ? `--accent: ${settings.accent}` : null,
+        settings.accentForeground ? `--accent-foreground: ${settings.accentForeground}` : null,
+        settings.destructive ? `--destructive: ${settings.destructive}` : null,
+        settings.destructiveForeground ? `--destructive-foreground: ${settings.destructiveForeground}` : null,
+        settings.border ? `--border: ${settings.border}` : null,
+        settings.input ? `--input: ${settings.input}` : null,
+        settings.ring ? `--ring: ${settings.ring}` : null,
+        settings.backgroundOpacity !== undefined ? `--background-opacity: ${settings.backgroundOpacity}` : null,
+        settings.cardOpacity !== undefined ? `--card-opacity: ${settings.cardOpacity}` : null,
+        settings.popoverOpacity !== undefined ? `--popover-opacity: ${settings.popoverOpacity}` : null,
+        settings.mutedOpacity !== undefined ? `--muted-opacity: ${settings.mutedOpacity}` : null,
+        settings.primaryOpacity !== undefined ? `--primary-opacity: ${settings.primaryOpacity}` : null,
+    ];
 
-    const cssVars = [
-        `--background: ${settings.background}`,
-        `--foreground: ${settings.foreground}`,
-        `--card: ${settings.card}`,
-        `--card-foreground: ${settings.cardForeground}`,
-        `--popover: ${settings.popover}`,
-        `--popover-foreground: ${settings.popoverForeground}`,
-        `--primary: ${settings.primary}`,
-        `--primary-foreground: ${settings.primaryForeground}`,
-        `--secondary: ${settings.secondary}`,
-        `--secondary-foreground: ${settings.secondaryForeground}`,
-        `--muted: ${settings.muted}`,
-        `--muted-foreground: ${settings.mutedForeground}`,
-        `--accent: ${settings.accent}`,
-        `--accent-foreground: ${settings.accentForeground}`,
-        `--destructive: ${settings.destructive}`,
-        `--destructive-foreground: ${settings.destructiveForeground}`,
-        `--border: ${settings.border}`,
-        `--input: ${settings.input}`,
-        `--ring: ${settings.ring}`,
-        `--background-opacity: ${settings.backgroundOpacity ?? 1}`,
-        `--card-opacity: ${settings.cardOpacity ?? 1}`,
-        `--popover-opacity: ${settings.popoverOpacity ?? 1}`,
-        `--muted-opacity: ${settings.mutedOpacity ?? 1}`,
-        `--primary-opacity: ${settings.primaryOpacity ?? 1}`,
-    ].filter(Boolean).join('; ');
-    
-    styleTag.innerHTML = `${themePrefix} { ${cssVars} }`;
+    return props.filter(Boolean).join('; ');
 }
 
 
-function CustomThemeApplier() {
+function DynamicThemeInjector() {
     const firestore = useFirestore();
-    const { theme, systemTheme } = useTheme();
 
     const lightThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_light') : null, [firestore]);
     const darkThemeRef = React.useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -62,15 +51,34 @@ function CustomThemeApplier() {
     const { data: lightThemeSettings } = useDoc(lightThemeRef, { listen: true });
     const { data: darkThemeSettings } = useDoc(darkThemeRef, { listen: true });
 
-    React.useEffect(() => {
-        setCssVariables('light', lightThemeSettings);
-    }, [lightThemeSettings]);
-
-    React.useEffect(() => {
-        setCssVariables('dark', darkThemeSettings);
-    }, [darkThemeSettings]);
+    const [isMounted, setIsMounted] = React.useState(false);
     
-    return null;
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    const lightThemeCss = React.useMemo(() => createThemeCss(lightThemeSettings), [lightThemeSettings]);
+    const darkThemeCss = React.useMemo(() => createThemeCss(darkThemeSettings), [darkThemeSettings]);
+
+    // We only render the style tags on the client after mounting to avoid hydration mismatch errors.
+    if (!isMounted) {
+        return null;
+    }
+
+    return (
+      <>
+        {lightThemeCss && 
+            <style id="dynamic-light-theme" dangerouslySetInnerHTML={{
+                __html: `.light { ${lightThemeCss} }`
+            }}/>
+        }
+        {darkThemeCss && 
+            <style id="dynamic-dark-theme" dangerouslySetInnerHTML={{
+                __html: `.dark { ${darkThemeCss} }`
+            }}/>
+        }
+      </>
+    )
 }
 
 
@@ -78,7 +86,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider {...props}>
       {children}
-      <CustomThemeApplier />
+      <DynamicThemeInjector />
     </NextThemesProvider>
   )
 }
