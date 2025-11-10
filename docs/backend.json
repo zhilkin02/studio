@@ -167,6 +167,11 @@
         "header_title": {
           "type": "string",
           "description": "Text content for the site header title."
+        },
+        "heroImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL for the hero image displayed on the main page."
         }
       }
     }

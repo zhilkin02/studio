@@ -10,7 +10,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Check, X, Loader2 } from 'lucide-react';
+import { AlertCircle, Check, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -154,18 +154,16 @@ function PendingVideosList() {
             toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
             
             const docRef = doc(firestore, 'pendingVideoFragments', video.id);
-            deleteDoc(docRef).catch((serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: docRef.path,
-                    operation: 'delete',
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                toast({ variant: "destructive", title: "Ошибка отклонения", description: serverError.message });
-            });
+            await deleteDoc(docRef);
 
             toast({ title: "Видео отклонено и удалено", description: `"${video.title}" было полностью удалено.` });
 
         } catch (e: any) {
+             const permissionError = new FirestorePermissionError({
+                    path: `pendingVideoFragments/${video.id}`,
+                    operation: 'delete',
+                });
+             errorEmitter.emit('permission-error', permissionError);
             console.error("Error rejecting video:", e);
              toast({ variant: "destructive", title: "Ошибка отклонения", description: e.message || "Произошла неизвестная ошибка." });
         } finally {
@@ -268,6 +266,7 @@ const appearanceFormSchema = z.object({
   popoverOpacity: z.number().min(0).max(1),
   mutedOpacity: z.number().min(0).max(1),
   primaryOpacity: z.number().min(0).max(1),
+  heroImageUrl: z.string().url("Неверный URL.").or(z.literal('')),
 });
 
 
@@ -280,8 +279,14 @@ function AppearanceSettings() {
         if (!firestore) return null;
         return doc(firestore, 'site_settings', 'theme');
     }, [firestore]);
+     const contentDocRef = useMemo(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'site_content', 'main');
+    }, [firestore]);
 
-    const { data: themeSettings, loading, error } = useDoc(themeDocRef, { listen: true });
+    const { data: themeSettings, loading: themeLoading, error: themeError } = useDoc(themeDocRef, { listen: true });
+    const { data: contentSettings, loading: contentLoading, error: contentError } = useDoc(contentDocRef, { listen: true });
+
 
     const form = useForm<z.infer<typeof appearanceFormSchema>>({
         resolver: zodResolver(appearanceFormSchema),
@@ -291,12 +296,14 @@ function AppearanceSettings() {
             popoverOpacity: 1,
             mutedOpacity: 1,
             primaryOpacity: 1,
+            heroImageUrl: '',
         }
     });
 
      useEffect(() => {
         if (themeSettings) {
-            form.reset({
+             form.reset({
+                ...form.getValues(),
                 primaryHex: themeSettings.primaryHex || '#8b5cf6',
                 secondaryHex: themeSettings.secondaryHex || '#374151',
                 backgroundHex: themeSettings.backgroundHex || '#111827',
@@ -323,7 +330,13 @@ function AppearanceSettings() {
                 primaryOpacity: themeSettings.primaryOpacity ?? 1,
             });
         }
-    }, [themeSettings, form]);
+         if (contentSettings) {
+            form.reset({
+                ...form.getValues(),
+                heroImageUrl: contentSettings.heroImageUrl || '',
+            });
+        }
+    }, [themeSettings, contentSettings, form]);
 
     const watchedValues = form.watch();
 
@@ -355,11 +368,29 @@ function AppearanceSettings() {
     } as React.CSSProperties;
 
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
-        if (!themeDocRef) return;
+        if (!themeDocRef || !contentDocRef) return;
         setIsSubmitting(true);
         
         const themeData = {
-            ...values,
+            primaryHex: values.primaryHex,
+            secondaryHex: values.secondaryHex,
+            backgroundHex: values.backgroundHex,
+            foregroundHex: values.foregroundHex,
+            accentHex: values.accentHex,
+            mutedHex: values.mutedHex,
+            destructiveHex: values.destructiveHex,
+            cardHex: values.cardHex,
+            borderHex: values.borderHex,
+            inputHex: values.inputHex,
+            ringHex: values.ringHex,
+            primaryForegroundHex: values.primaryForegroundHex,
+            secondaryForegroundHex: values.secondaryForegroundHex,
+            accentForegroundHex: values.accentForegroundHex,
+            mutedForegroundHex: values.mutedForegroundHex,
+            destructiveForegroundHex: values.destructiveForegroundHex,
+            cardForegroundHex: values.cardForegroundHex,
+            popoverHex: values.popoverHex,
+            popoverForegroundHex: values.popoverForegroundHex,
             background: hexToHsl(values.backgroundHex),
             foreground: hexToHsl(values.foregroundHex),
             card: hexToHsl(values.cardHex),
@@ -385,8 +416,16 @@ function AppearanceSettings() {
             mutedOpacity: values.mutedOpacity,
             primaryOpacity: values.primaryOpacity,
         };
+
+        const contentData = {
+            heroImageUrl: values.heroImageUrl
+        };
         
-        setDoc(themeDocRef, themeData, { merge: true })
+        const themePromise = setDoc(themeDocRef, themeData, { merge: true });
+        const contentPromise = setDoc(contentDocRef, contentData, { merge: true });
+
+
+        Promise.all([themePromise, contentPromise])
             .then(() => {
                  toast({
                     title: "Настройки сохранены",
@@ -394,8 +433,8 @@ function AppearanceSettings() {
                 });
             })
             .catch((serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: themeDocRef.path,
+                 const permissionError = new FirestorePermissionError({
+                    path: 'site_settings/theme or site_content/main',
                     operation: 'update',
                     requestResourceData: values,
                 });
@@ -403,13 +442,15 @@ function AppearanceSettings() {
                 toast({
                     variant: "destructive",
                     title: "Ошибка сохранения",
-                    description: "Не удалось сохранить настройки темы. Проверьте права доступа в консоли Firebase.",
+                    description: "Не удалось сохранить настройки. Проверьте права доступа в консоли Firebase.",
                 });
             })
             .finally(() => {
                 setIsSubmitting(false);
             });
     }
+    const loading = themeLoading || contentLoading;
+    const error = themeError || contentError;
 
     if (loading) {
         return (
@@ -439,13 +480,13 @@ function AppearanceSettings() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Ошибка загрузки настроек</AlertTitle>
                 <AlertDescription>
-                    Не удалось получить данные темы. Проверьте права доступа к `site_settings/theme`.
+                    Не удалось получить данные темы или контента. Проверьте права доступа к `site_settings/theme` и `site_content/main`.
                     <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
                 </AlertDescription>
             </Alert>
         )
     }
-    const ColorPickerInput = ({ name, label }: { name: Exclude<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity`>, label: string }) => (
+    const ColorPickerInput = ({ name, label }: { name: Exclude<keyof z.infer<typeof appearanceFormSchema>, `${string}Opacity` | 'heroImageUrl'>, label: string }) => (
         <FormField
             control={form.control}
             name={name}
@@ -498,13 +539,33 @@ function AppearanceSettings() {
             <CardHeader>
                 <CardTitle>Внешний вид</CardTitle>
                 <CardDescription>
-                    Настройте цветовую схему для всего сайта. Изменения сразу отобразятся в панели предпросмотра.
+                    Настройте цветовую схему и другие элементы для всего сайта. Изменения сразу отобразятся в панели предпросмотра.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <div className="space-y-8">
+                             <div>
+                                <h3 className="text-lg font-medium mb-4">Изображение на главной</h3>
+                                <FormField
+                                    control={form.control}
+                                    name="heroImageUrl"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>URL изображения</FormLabel>
+                                            <FormControl>
+                                                <div className="relative">
+                                                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <Input {...field} disabled={isSubmitting} className="pl-10" placeholder="https://example.com/image.png" />
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             </div>
+                             <Separator />
                              <div>
                                  <h3 className="text-lg font-medium mb-4">Основные цвета</h3>
                                  <div className="grid grid-cols-2 gap-4">

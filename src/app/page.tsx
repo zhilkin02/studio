@@ -23,7 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { deleteVideoFromYouTube } from "@/ai/flows/youtube-delete-flow";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-
+import { useDoc } from "@/firebase/firestore/use-doc";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Image from 'next/image';
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -175,6 +177,11 @@ export default function Home() {
   }, [firestore]);
 
   const { data: videos, loading, error } = useCollection(videosQuery);
+  const contentDocRef = useMemo(() => firestore ? doc(firestore, 'site_content', 'main') : null, [firestore]);
+  const { data: contentData, loading: contentLoading } = useDoc(contentDocRef);
+  
+  const heroImageUrl = contentData?.heroImageUrl || PlaceHolderImages.find(p => p.id === 'hero-1')?.imageUrl;
+
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
@@ -212,18 +219,16 @@ export default function Home() {
         toast({ title: "Удалено с YouTube", description: "Видео успешно удалено. Удаление из базы данных..." });
         const docRef = doc(firestore, 'publicVideoFragments', video.id);
         
-        deleteDoc(docRef).catch((serverError) => {
-             const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-             toast({ variant: "destructive", title: "Ошибка удаления из БД", description: serverError.message });
-        });
+        await deleteDoc(docRef);
 
         toast({ title: "Видео удалено", description: `"${video.title}" было полностью удалено.` });
 
     } catch (e: any) {
+         const permissionError = new FirestorePermissionError({
+            path: `publicVideoFragments/${video.id}`,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         console.error("Error deleting video:", e);
         toast({ variant: "destructive", title: "Ошибка удаления", description: e.message || "Произошла неизвестная ошибка." });
     } finally {
@@ -234,7 +239,19 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-        <section className="text-center py-16">
+        <section className="relative w-full h-48 md:h-64 mb-8 -mx-4">
+            {contentLoading ? <Skeleton className="w-full h-full" /> : (
+                 <Image
+                    src={heroImageUrl}
+                    alt="Hero image"
+                    fill
+                    className="object-cover"
+                    priority
+                    data-ai-hint="retro tv"
+                />
+            )}
+        </section>
+        <section className="text-center py-8">
             <EditableText
               docPath="site_content/main"
               fieldKey="home_title"
