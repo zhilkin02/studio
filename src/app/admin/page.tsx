@@ -328,7 +328,7 @@ const defaultLightTheme = {
 }
 
 
-function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeType: 'light' | 'dark', themeData: any, isLoading: boolean, onSave: (values: any) => Promise<void> }) {
+function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeType: 'light' | 'dark', themeData: any, isLoading: boolean, onSave: (themeType: 'light' | 'dark', values: any) => Promise<void> }) {
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -382,7 +382,7 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
     async function onSubmit(values: z.infer<typeof appearanceFormSchema>) {
         setIsSubmitting(true);
         try {
-            await onSave(values);
+            await onSave(themeType, values);
             toast({
                 title: "Настройки сохранены",
                 description: `Внешний вид ${themeType === 'dark' ? 'тёмной' : 'светлой'} темы был успешно обновлен.`,
@@ -589,6 +589,7 @@ function ThemeCustomizer({ themeType, themeData, isLoading, onSave }: { themeTyp
 
 function AppearanceSettings() {
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'dark-theme' | 'light-theme' | 'hero'>('dark-theme');
 
     const darkThemeDocRef = useMemo(() => firestore ? doc(firestore, 'site_settings', 'theme_dark') : null, [firestore]);
@@ -624,9 +625,12 @@ function AppearanceSettings() {
     }, [contentSettings, heroImageForm]);
 
 
-    const handleThemeSave = async (values: any) => {
-        const themeDocRef = activeTab === 'dark-theme' ? darkThemeDocRef : lightThemeDocRef;
-        if (!themeDocRef) return;
+    const handleThemeSave = async (themeType: 'light' | 'dark', values: any) => {
+        const themeDocRef = themeType === 'dark' ? darkThemeDocRef : lightThemeDocRef;
+        if (!themeDocRef) {
+            toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось получить ссылку на документ темы.' });
+            return;
+        }
         
         const themeData = {
             ...values,
