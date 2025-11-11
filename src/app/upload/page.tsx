@@ -1,8 +1,8 @@
 'use client';
 import { useUser } from '@/firebase/auth/use-user';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect, useRef } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -13,9 +13,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Loader2, UploadCloud, Timer } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, Timer, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { uploadVideoToYouTube } from '@/ai/flows/youtube-upload-flow';
+import { generateKeywords } from '@/ai/flows/generate-keywords-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -37,13 +38,9 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0); 
   const [uploadMessage, setUploadMessage] = useState('');
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -52,6 +49,50 @@ export default function UploadPage() {
       keywords: '',
     },
   });
+
+  const watchedTitle = useWatch({ control: form.control, name: 'title' });
+  const watchedDescription = useWatch({ control: form.control, name: 'description' });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+  
+  useEffect(() => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // Only generate if title has some content
+      if (watchedTitle && watchedTitle.trim().length > 4) {
+          debounceTimeoutRef.current = setTimeout(async () => {
+              setIsGeneratingKeywords(true);
+              try {
+                  const result = await generateKeywords({
+                      title: watchedTitle,
+                      description: watchedDescription || '',
+                  });
+                  if (result.keywords) {
+                      form.setValue('keywords', result.keywords, { shouldValidate: true });
+                  }
+              } catch (e) {
+                  // Don't bother the user with a toast for this, just log it.
+                  console.error('Error generating keywords:', e);
+              } finally {
+                  setIsGeneratingKeywords(false);
+              }
+          }, 1000); // 1-second debounce delay
+      }
+
+      return () => {
+          if (debounceTimeoutRef.current) {
+              clearTimeout(debounceTimeoutRef.current);
+          }
+      };
+
+  }, [watchedTitle, watchedDescription, form]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -293,7 +334,15 @@ export default function UploadPage() {
                 name="keywords"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ключевые слова</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Ключевые слова</FormLabel>
+                      {isGeneratingKeywords && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+                          <Sparkles className="h-3 w-3" />
+                          <span>AI генерирует...</span>
+                        </div>
+                      )}
+                    </div>
                     <FormControl>
                       <Input
                         placeholder="смех, мем, цитата, ирония"
@@ -302,7 +351,7 @@ export default function UploadPage() {
                       />
                     </FormControl>
                      <FormDescription>
-                      Перечислите через запятую ключевые слова, которые помогут найти это видео.
+                      AI автоматически предложит ключевые слова. Их можно редактировать.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
