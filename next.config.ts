@@ -31,6 +31,14 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  // Make environment variables available on the server.
+  serverRuntimeConfig: {
+    YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
+    YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
+    YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN,
+    YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY
+  },
 };
 
 export default nextConfig;
