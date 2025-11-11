@@ -10,6 +10,8 @@ import { getAuth, signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Shield, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 export default function ProfilePage() {
   const { user, loading } = useUser();
@@ -56,7 +58,18 @@ export default function ProfilePage() {
           </Avatar>
           <CardTitle className="text-3xl flex items-center justify-center gap-2">
             {user.displayName}
-            {user.isAdmin && <Shield className="h-6 w-6 text-primary" title="Администратор"/>}
+            {user.isAdmin && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Shield className="h-6 w-6 text-primary"/>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Администратор</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </CardTitle>
           <CardDescription>{user.email}</CardDescription>
         </CardHeader>
