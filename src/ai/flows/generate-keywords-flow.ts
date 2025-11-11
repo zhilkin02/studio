@@ -1,7 +1,7 @@
 'use server';
 /**
- * @fileOverview A flow for generating keywords from video title and description.
- * - generateKeywords - A function that handles the keyword generation process.
+ * @fileOverview A flow for generating keywords for a video.
+ * - generateKeywords - A function that handles keyword generation.
  * - GenerateKeywordsInput - The input type for the generateKeywords function.
  * - GenerateKeywordsOutput - The return type for the generateKeywords function.
  */
@@ -11,37 +11,36 @@ import { z } from 'genkit';
 
 const GenerateKeywordsInputSchema = z.object({
   title: z.string().describe('The title of the video.'),
-  description: z.string().describe('The description of the video.'),
+  description: z.string().optional().describe('The description of the video.'),
 });
 export type GenerateKeywordsInput = z.infer<typeof GenerateKeywordsInputSchema>;
 
 const GenerateKeywordsOutputSchema = z.object({
-  keywords: z
-    .string()
-    .describe(
-      'A comma-separated list of relevant keywords based on the title and description.'
-    ),
+  keywords: z.string().describe('A comma-separated string of relevant keywords.'),
 });
-export type GenerateKeywordsOutput = z.infer<
-  typeof GenerateKeywordsOutputSchema
->;
+export type GenerateKeywordsOutput = z.infer<typeof GenerateKeywordsOutputSchema>;
 
-export async function generateKeywords(
-  input: GenerateKeywordsInput
-): Promise<GenerateKeywordsOutput> {
-  return generateKeywordsFlow(input);
+
+export async function generateKeywords(input: GenerateKeywordsInput): Promise<GenerateKeywordsOutput> {
+    return generateKeywordsFlow(input);
 }
 
+
 const prompt = ai.definePrompt({
-  name: 'generateKeywordsPrompt',
-  input: { schema: GenerateKeywordsInputSchema },
-  output: { schema: GenerateKeywordsOutputSchema },
-  prompt: `You are an expert in SEO and video content analysis. Based on the following video title and description, generate a comma-separated list of 5 to 10 relevant and concise keywords in Russian. These keywords should help users find the video easily.
+    name: 'generateKeywordsPrompt',
+    input: { schema: GenerateKeywordsInputSchema },
+    output: { schema: GenerateKeywordsOutputSchema },
+    prompt: `You are an expert in video content tagging. Based on the provided title and description, generate a concise, comma-separated list of the most relevant keywords. 
+    
+    The keywords should be in Russian.
+    Do not include more than 7 keywords.
+    The keywords should be short and relevant.
+    Focus on the main subjects, themes, and any notable names or concepts.
+    Return only the comma-separated string of keywords.
 
-Title: {{{title}}}
-Description: {{{description}}}
-
-Generate only the keywords, separated by commas.`,
+    Title: {{{title}}}
+    Description: {{{description}}}
+    `,
 });
 
 const generateKeywordsFlow = ai.defineFlow(
@@ -51,11 +50,10 @@ const generateKeywordsFlow = ai.defineFlow(
     outputSchema: GenerateKeywordsOutputSchema,
   },
   async (input) => {
-    // If both title and description are short, don't even bother calling the AI.
-    if (input.title.length < 5 && input.description.length < 10) {
-        return { keywords: '' };
-    }
     const { output } = await prompt(input);
-    return output!;
+    if (!output) {
+      return { keywords: '' };
+    }
+    return output;
   }
 );

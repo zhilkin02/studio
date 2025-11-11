@@ -1,7 +1,7 @@
 'use client';
 import { useUser } from '@/firebase/auth/use-user';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +20,7 @@ import { generateKeywords } from '@/ai/flows/generate-keywords-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useDebounce } from 'use-debounce';
 
 
 const formSchema = z.object({
@@ -27,6 +28,47 @@ const formSchema = z.object({
   description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
   keywords: z.string().optional(),
 });
+
+function KeywordGenerator({ control, setValue }: { control: any, setValue: any }) {
+    const [isGenerating, setIsGenerating] = useState(false);
+    const title = useWatch({ control, name: 'title' });
+    const description = useWatch({ control, name: 'description' });
+
+    const [debouncedTitle] = useDebounce(title, 1000);
+    const [debouncedDescription] = useDebounce(description, 1000);
+    
+    const handleGenerateKeywords = useCallback(async () => {
+        if (!debouncedTitle || debouncedTitle.length < 5) return;
+
+        setIsGenerating(true);
+        try {
+            const result = await generateKeywords({ title: debouncedTitle, description: debouncedDescription });
+            if (result.keywords) {
+                setValue('keywords', result.keywords, { shouldValidate: true });
+            }
+        } catch (error) {
+            console.error("Failed to generate keywords:", error);
+            // Optionally show a toast message
+        } finally {
+            setIsGenerating(false);
+        }
+    }, [debouncedTitle, debouncedDescription, setValue]);
+
+    useEffect(() => {
+        handleGenerateKeywords();
+    }, [handleGenerateKeywords]);
+
+    return (
+        <div className="absolute right-2 top-2">
+            {isGenerating ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+                <Sparkles className="h-5 w-5 text-yellow-500" />
+            )}
+        </div>
+    );
+}
+
 
 export default function UploadPage() {
   const { user, loading } = useUser();
@@ -38,9 +80,13 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0); 
   const [uploadMessage, setUploadMessage] = useState('');
   const [quotaExceeded, setQuotaExceeded] = useState(false);
-  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,50 +95,6 @@ export default function UploadPage() {
       keywords: '',
     },
   });
-
-  const watchedTitle = useWatch({ control: form.control, name: 'title' });
-  const watchedDescription = useWatch({ control: form.control, name: 'description' });
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-  
-  useEffect(() => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      // Only generate if title has some content
-      if (watchedTitle && watchedTitle.trim().length > 4) {
-          debounceTimeoutRef.current = setTimeout(async () => {
-              setIsGeneratingKeywords(true);
-              try {
-                  const result = await generateKeywords({
-                      title: watchedTitle,
-                      description: watchedDescription || '',
-                  });
-                  if (result.keywords) {
-                      form.setValue('keywords', result.keywords, { shouldValidate: true });
-                  }
-              } catch (e) {
-                  // Don't bother the user with a toast for this, just log it.
-                  console.error('Error generating keywords:', e);
-              } finally {
-                  setIsGeneratingKeywords(false);
-              }
-          }, 1000); // 1-second debounce delay
-      }
-
-      return () => {
-          if (debounceTimeoutRef.current) {
-              clearTimeout(debounceTimeoutRef.current);
-          }
-      };
-
-  }, [watchedTitle, watchedDescription, form]);
-
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -334,24 +336,19 @@ export default function UploadPage() {
                 name="keywords"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Ключевые слова</FormLabel>
-                      {isGeneratingKeywords && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
-                          <Sparkles className="h-3 w-3" />
-                          <span>AI генерирует...</span>
-                        </div>
-                      )}
+                    <FormLabel>Ключевые слова</FormLabel>
+                    <div className="relative">
+                        <FormControl>
+                        <Input
+                            placeholder="смех, мем, цитата, ирония"
+                            {...field}
+                            disabled={isSubmitting}
+                        />
+                        </FormControl>
+                        <KeywordGenerator control={form.control} setValue={form.setValue} />
                     </div>
-                    <FormControl>
-                      <Input
-                        placeholder="смех, мем, цитата, ирония"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
                      <FormDescription>
-                      AI автоматически предложит ключевые слова. Их можно редактировать.
+                      Перечислите через запятую ключевые слова, которые помогут найти это видео. AI поможет вам с этим.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
