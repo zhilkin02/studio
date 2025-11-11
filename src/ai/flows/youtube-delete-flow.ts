@@ -8,6 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import getConfig from 'next/config';
 
 const YouTubeDeleteInputSchema = z.object({
     videoId: z.string().describe('The ID of the video to delete.'),
@@ -33,10 +34,8 @@ const deleteVideoFlow = ai.defineFlow(
     async (input) => {
         const { videoId } = input;
         
-        const clientId = process.env.YOUTUBE_CLIENT_ID;
-        const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-        const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-        const apiKey = process.env.YOUTUBE_API_KEY;
+        const { serverRuntimeConfig } = getConfig();
+        const { YOUTUBE_CLIENT_ID: clientId, YOUTUBE_CLIENT_SECRET: clientSecret, YOUTUBE_REFRESH_TOKEN: refreshToken, YOUTUBE_API_KEY: apiKey } = serverRuntimeConfig;
 
         if (!clientId || !clientSecret || !refreshToken || !apiKey) {
             return { success: false, error: 'Отсутствуют учетные данные YouTube в файле .env.local' };
