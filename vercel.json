@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/**/*.ts": {
+      "maxDuration": 300
+    },
+    "app/**/*.js": {
+      "maxDuration": 300
+    }
+  }
+}
