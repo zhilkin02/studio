@@ -79,7 +79,7 @@ const deleteVideoFlow = ai.defineFlow(
                     errorMessage = "Суточный лимит на действия с видео на YouTube исчерпан. Пожалуйста, попробуйте снова завтра.";
                  }
                  if (errorText.includes('invalid_client')) {
-                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local.";
+                    errorMessage = "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в переменных окружения.";
                  }
                  return { success: false, error: errorMessage };
             }

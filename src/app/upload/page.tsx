@@ -136,7 +136,7 @@ export default function UploadPage() {
                 uploadDate: serverTimestamp(),
             };
 
-            addDoc(targetCollectionRef, docData).catch((serverError) => {
+            await addDoc(targetCollectionRef, docData).catch((serverError) => {
                  const permissionError = new FirestorePermissionError({
                     path: targetCollectionRef.path,
                     operation: 'create',
@@ -144,6 +144,8 @@ export default function UploadPage() {
                 });
                 errorEmitter.emit('permission-error', permissionError);
                 toast({ variant: 'destructive', title: 'Ошибка сохранения в БД', description: serverError.message });
+                // Re-throw to be caught by the outer try-catch
+                throw serverError;
             });
 
             setUploadProgress(100);
@@ -176,8 +178,7 @@ export default function UploadPage() {
             setUploadProgress(0);
             setUploadMessage('');
         } finally {
-            // We keep the submit button disabled if quota is exceeded
-            if(!quotaExceeded) setIsSubmitting(false);
+            setIsSubmitting(false);
         }
     };
 

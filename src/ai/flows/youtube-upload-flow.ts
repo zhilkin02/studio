@@ -96,7 +96,7 @@ const uploadVideoFlow = ai.defineFlow(
                     return { error: "Суточный лимит загрузки видео на YouTube исчерпан. Пожалуйста, попробуйте снова позже.", quotaExceeded: true };
                  }
                  if (errorText.includes('invalid_client')) {
-                    return { error: "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в .env.local." };
+                    return { error: "Ошибка аутентификации YouTube: неверный клиент. Проверьте учетные данные в переменных окружения." };
                  }
                  return { error: `Ошибка создания сессии загрузки: ${sessionResponse.status} ${sessionResponse.statusText}. ${errorText}` };
             }
