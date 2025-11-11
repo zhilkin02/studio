@@ -9,7 +9,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { Buffer } from 'buffer';
-import getConfig from 'next/config';
 
 const YouTubeUploadInputSchema = z.object({
     title: z.string().describe('The title of the video.'),
@@ -38,11 +37,10 @@ const uploadVideoFlow = ai.defineFlow(
     async (input) => {
         const { title, description, videoDataUri } = input;
         
-        const { serverRuntimeConfig } = getConfig();
-        const { YOUTUBE_CLIENT_ID: clientId, YOUTUBE_CLIENT_SECRET: clientSecret, YOUTUBE_REFRESH_TOKEN: refreshToken, YOUTUBE_API_KEY: apiKey } = serverRuntimeConfig;
+        const { YOUTUBE_CLIENT_ID: clientId, YOUTUBE_CLIENT_SECRET: clientSecret, YOUTUBE_REFRESH_TOKEN: refreshToken, YOUTUBE_API_KEY: apiKey } = process.env;
         
         if (!clientId || !clientSecret || !refreshToken || !apiKey) {
-             return { error: 'Отсутствуют учетные данные YouTube в файле .env.local' };
+             return { error: 'Отсутствуют переменные окружения YouTube на сервере.' };
         }
 
         try {
