@@ -27,6 +27,7 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -370,10 +371,10 @@ export default function Home() {
                     <CardFooter className="flex justify-between items-center">
                         {videoId && (
                             <Button asChild variant="secondary" className="w-full">
-                                <a href={`https://www.ssyoutube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer">
+                                <Link href={`/api/download?videoId=${videoId}&title=${encodeURIComponent(video.title)}`} target="_blank">
                                     <Download className="mr-2 h-4 w-4" />
                                     Скачать
-                                </a>
+                                </Link>
                             </Button>
                         )}
                          {user?.isAdmin && (
