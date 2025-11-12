@@ -369,14 +369,12 @@ export default function Home() {
                       )}
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                        {videoId && (
-                            <Button asChild variant="secondary" className="w-full">
-                                <Link href={`/api/download?videoId=${videoId}&title=${encodeURIComponent(video.title)}`} target="_blank">
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Скачать
-                                </Link>
-                            </Button>
-                        )}
+                        <Button variant="secondary" className="w-full" asChild>
+                            <Link href={`https://ssyoutube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer">
+                                <Download className="mr-2 h-4 w-4" />
+                                Скачать
+                            </Link>
+                        </Button>
                          {user?.isAdmin && (
                             <div className="flex gap-2 ml-2">
                                 <Button variant="outline" size="icon" disabled={isMutating} onClick={() => setEditingVideo(video)}>
