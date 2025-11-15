@@ -370,10 +370,10 @@ export default function Home() {
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
                         <Button variant="secondary" className="w-full" asChild>
-                            <Link href={`https://ssyoutube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer">
+                            <a href={videoId ? `/api/download?v=${videoId}&title=${encodeURIComponent(video.title)}` : '#'} download>
                                 <Download className="mr-2 h-4 w-4" />
                                 Скачать
-                            </Link>
+                            </a>
                         </Button>
                          {user?.isAdmin && (
                             <div className="flex gap-2 ml-2">
@@ -393,7 +393,7 @@ export default function Home() {
                                             <AlertDialogTitle>Вы абсолютно уверены?</AlertDialogTitle>
                                             <AlertDialogDescription>
                                                 Это действие необратимо. Видео будет удалено с YouTube и из базы данных.
-                                            </AlertDialogDescription>
+                                            </Действие>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
