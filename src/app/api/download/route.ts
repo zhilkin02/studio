@@ -11,7 +11,7 @@ async function getYouTubeDlpPath() {
     const binaryPath = path.join(tmpDir, 'yt-dlp_linux'); // Используем имя бинарника для Linux
     try {
         // Указываем, что нужно скачать бинарный файл для Linux
-        await YTDlpWrap.downloadFromGithub(binaryPath, undefined, 'yt-dlp_linux');
+        await YTDlpWrap.downloadFromGithub(binaryPath);
         return binaryPath;
     } catch (e) {
         // Если скачивание не удалось, возможно, файл уже существует (например, из-за кеширования Vercel)
