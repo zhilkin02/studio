@@ -229,6 +229,7 @@ export default function Home() {
   const { toast } = useToast();
   const [mutatingId, setMutatingId] = useState<string | null>(null);
   const [editingVideo, setEditingVideo] = useState<VideoFragment | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const videosQuery = useMemo(() => {
     if (!firestore) return null;
@@ -280,6 +281,50 @@ export default function Home() {
   const handleCardClick = (videoId: string) => {
     router.push(`/video/${videoId}`);
   };
+
+  const handleDownload = async (video: VideoFragment) => {
+    setDownloadingId(video.id);
+    try {
+        const response = await fetch(`/api/download?url=${encodeURIComponent(video.filePath)}`);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Не удалось начать скачивание.');
+        }
+
+        // Этот код создаст "невидимую" ссылку и кликнет по ней, чтобы начать скачивание
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'video.mp4';
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch && filenameMatch.length > 1) {
+                filename = filenameMatch[1];
+            }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        
+    } catch (e: any) {
+        toast({
+            variant: "destructive",
+            title: "Ошибка скачивания",
+            description: e.message || "Произошла ошибка при попытке скачать видео.",
+        });
+    } finally {
+        setDownloadingId(null);
+    }
+};
+
   
   const handleDelete = async (video: VideoFragment) => {
     if (!firestore) return;
@@ -421,6 +466,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const isMutating = mutatingId === video.id;
+                const isDownloading = downloadingId === video.id;
                 const videoId = getYouTubeId(video.filePath);
 
                 return (
@@ -448,11 +494,9 @@ export default function Home() {
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                         <Button variant="secondary" asChild>
-                            <Link href={`https://savefrom.net/${video.filePath}`} target="_blank" rel="noopener noreferrer">
-                                <Download className="mr-2 h-4 w-4" />
-                                Скачать
-                            </Link>
+                         <Button variant="secondary" onClick={() => handleDownload(video)} disabled={isDownloading}>
+                            {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                            Скачать
                         </Button>
 
                          {user?.isAdmin && (
