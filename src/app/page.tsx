@@ -413,7 +413,7 @@ export default function Home() {
                         }}>
                              <Image
                                 src={`https://img.youtube.com/vi/${getYouTubeId(video.filePath)}/mqdefault.jpg`}
-                                alt={video.phrase}
+                                alt={video.phrase || 'Video thumbnail'}
                                 width={320}
                                 height={180}
                                 className="w-full h-full object-cover"
