@@ -197,7 +197,7 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
                         <FormItem>
                             <FormLabel>Ключевые слова</FormLabel>
                             <FormControl>
-                                <Input {...field} placeholder="фраза 1, фраза 2, еще фраза" disabled={isSubmitting} />
+                                <Textarea className="resize-y min-h-[80px]" {...field} placeholder="фраза 1, фраза 2, еще фраза" disabled={isSubmitting} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

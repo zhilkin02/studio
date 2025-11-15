@@ -384,8 +384,9 @@ export default function UploadPage() {
                     <FormLabel>Ключевые слова</FormLabel>
                     <div className="relative">
                         <FormControl>
-                        <Input
+                        <Textarea
                             placeholder="AI сгенерирует ключевые слова здесь..."
+                            className="resize-y min-h-[80px]"
                             {...field}
                             disabled={isSubmitting}
                         />
