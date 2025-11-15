@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Download, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -27,6 +27,7 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import Link from "next/link";
 
 
 // Helper to extract YouTube video ID from URL
@@ -240,23 +241,6 @@ export default function Home() {
     }
   };
 
-  const handleCopyLink = (videoPath: string) => {
-    navigator.clipboard.writeText(videoPath)
-        .then(() => {
-            toast({
-                title: "Ссылка скопирована!",
-                description: "Вставьте ее в любой сервис для скачивания видео с YouTube.",
-            });
-        })
-        .catch(() => {
-            toast({
-                variant: "destructive",
-                title: "Ошибка",
-                description: "Не удалось скопировать ссылку.",
-            });
-        });
-    };
-
 
   return (
     <>
@@ -389,9 +373,11 @@ export default function Home() {
                       )}
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                        <Button variant="secondary" className="w-full" onClick={() => handleCopyLink(video.filePath)}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Копировать ссылку
+                         <Button variant="secondary" className="w-full" asChild>
+                            <Link href={`https://savefrom.net/` + video.filePath} target="_blank" rel="noopener noreferrer">
+                                <Download className="mr-2 h-4 w-4" />
+                                Скачать
+                            </Link>
                         </Button>
 
                          {user?.isAdmin && (
