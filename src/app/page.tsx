@@ -340,6 +340,8 @@ export default function Home() {
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const videoId = getYouTubeId(video.filePath);
                 const isMutating = mutatingId === video.id;
+                const downloadUrl = videoId ? `https://www.ssyoutube.com/watch?v=${videoId}` : '#';
+
                 return (
                   <Card key={video.id} className="flex flex-col">
                     <CardHeader className="p-0">
@@ -370,7 +372,7 @@ export default function Home() {
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
                         <Button variant="secondary" className="w-full" asChild>
-                            <a href={videoId ? `/api/download?v=${videoId}&title=${encodeURIComponent(video.title)}` : '#'} download>
+                            <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
                                 <Download className="mr-2 h-4 w-4" />
                                 Скачать
                             </a>
