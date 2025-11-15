@@ -340,7 +340,7 @@ export default function Home() {
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const videoId = getYouTubeId(video.filePath);
                 const isMutating = mutatingId === video.id;
-                const downloadUrl = videoId ? `https://www.ssyoutube.com/watch?v=${videoId}` : '#';
+                const downloadUrl = `https://www.y2mate.com/youtube/${videoId}`;
 
                 return (
                   <Card key={video.id} className="flex flex-col">
