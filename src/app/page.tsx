@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Download, Search, AlertCircle, Trash2, Pencil, Loader2, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -20,14 +20,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from "@/components/ui/textarea";
-import { deleteVideoFromYouTube } from "@/ai/flows/youtube-delete-flow";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { deleteVideoFromYouTube } from '@/ai/flows/youtube-delete-flow';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import Link from "next/link";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 
 // Helper to extract YouTube video ID from URL
 const getYouTubeId = (url: string) => {
@@ -340,7 +341,10 @@ export default function Home() {
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const videoId = getYouTubeId(video.filePath);
                 const isMutating = mutatingId === video.id;
-                const downloadUrl = `https://www.y2mate.com/youtube/${videoId}`;
+
+                const downloadUrlY2mate = `https://www.y2mate.com/youtube/${videoId}`;
+                const downloadUrlSaveFrom = `https://savefrom.net/https://www.youtube.com/watch?v=${videoId}`;
+
 
                 return (
                   <Card key={video.id} className="flex flex-col">
@@ -371,12 +375,28 @@ export default function Home() {
                       )}
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                        <Button variant="secondary" className="w-full" asChild>
-                            <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-                                <Download className="mr-2 h-4 w-4" />
-                                Скачать
-                            </a>
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="secondary" className="w-full">
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Скачать
+                                    <ChevronDown className="ml-auto h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem asChild>
+                                    <a href={downloadUrlY2mate} target="_blank" rel="noopener noreferrer">
+                                        Сервис 1 (y2mate)
+                                    </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                     <a href={downloadUrlSaveFrom} target="_blank" rel="noopener noreferrer">
+                                        Сервис 2 (savefrom)
+                                    </a>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                          {user?.isAdmin && (
                             <div className="flex gap-2 ml-2">
                                 <Button variant="outline" size="icon" disabled={isMutating} onClick={() => setEditingVideo(video)}>
@@ -430,4 +450,5 @@ export default function Home() {
     </div>
     </>
   );
-}
+
+    
