@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ytdl from 'ytdl-core';
-import { Readable } from 'stream';
-
-// Helper to convert Node.js stream to Web Stream
-function toReadableStream(nodeStream: NodeJS.ReadableStream): ReadableStream {
-    return new ReadableStream({
-        start(controller) {
-            nodeStream.on("data", (chunk) => controller.enqueue(chunk));
-            nodeStream.on("end", () => controller.close());
-            nodeStream.on("error", (err) => controller.error(err));
-        },
-    });
-}
-
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -27,32 +14,41 @@ export async function GET(req: NextRequest) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const info = await ytdl.getInfo(videoUrl);
 
-    // Prefer a format that has both video and audio. 720p is usually a good compromise.
+    // Выбираем формат, который содержит и видео, и аудио. 720p - хороший компромисс.
     const format = ytdl.chooseFormat(info.formats, {
       quality: 'highestvideo',
-      filter: (f) => f.container === 'mp4' && f.hasAudio && f.hasVideo,
+      filter: (f) => f.container === 'mp4' && !!f.hasAudio && !!f.hasVideo,
     });
     
-     if (!format) {
-       // Fallback to highest quality if no combined format is found (might be audio only or video only)
+    // Если комбинированный формат не найден, пытаемся найти лучший из доступных.
+    if (!format) {
        const fallbackFormat = ytdl.chooseFormat(info.formats, { quality: 'highest' });
         if (!fallbackFormat) {
           return new NextResponse('Could not find any suitable video format.', { status: 500 });
         }
-         return new NextResponse('Could not find a format with both video and audio. High-quality streams might be separate.', { status: 500 });
+        // Сообщаем пользователю, что может быть проблема с аудио/видео
+        console.warn(`Could not find a combined format for ${videoId}. Falling back to highest quality format without guaranteed audio/video.`);
     }
 
-    const videoStream = ytdl(videoUrl, { format });
-    const webStream = toReadableStream(videoStream);
+    const videoStreamUrl = format.url;
 
+    // Получаем видеопоток напрямую через fetch, что более надежно в serverless-среде
+    const response = await fetch(videoStreamUrl);
+
+    if (!response.ok || !response.body) {
+        throw new Error('Failed to fetch video stream from YouTube.');
+    }
+    
     const safeTitle = (title).replace(/[^a-z0-9_ -]/gi, '_');
     const filename = `${safeTitle}.mp4`;
 
+    // Создаем заголовки для ответа
     const headers = new Headers();
     headers.set('Content-Disposition', `attachment; filename="${filename}"`);
     headers.set('Content-Type', 'video/mp4');
-
-    return new NextResponse(webStream, { headers });
+    
+    // Передаем поток напрямую в ответ
+    return new NextResponse(response.body, { headers });
 
   } catch (error: any) {
     console.error(`Error processing download for video ID ${videoId}:`, error);
