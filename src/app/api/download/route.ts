@@ -8,9 +8,10 @@ export const dynamic = 'force-dynamic';
 async function getYouTubeDlpPath() {
     // В среде Vercel мы можем писать только в /tmp
     const tmpDir = '/tmp';
-    const binaryPath = path.join(tmpDir, 'yt-dlp');
+    const binaryPath = path.join(tmpDir, 'yt-dlp_linux'); // Используем имя бинарника для Linux
     try {
-        await YTDlpWrap.downloadFromGithub(binaryPath);
+        // Указываем, что нужно скачать бинарный файл для Linux
+        await YTDlpWrap.downloadFromGithub(binaryPath, undefined, 'yt-dlp_linux');
         return binaryPath;
     } catch (e) {
         // Если скачивание не удалось, возможно, файл уже существует (например, из-за кеширования Vercel)
@@ -59,6 +60,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('yt-dlp error:', error);
-    return NextResponse.json({error: `Failed to download video: ${error.message}`}, {status: 500});
+    // Более детальное логирование ошибки
+    const errorMessage = error.message || 'Unknown error';
+    const errorStderr = error.stderr || 'No stderr';
+    return NextResponse.json({error: `Failed to download video: ${errorMessage}`, stderr: errorStderr}, {status: 500});
   }
 }
