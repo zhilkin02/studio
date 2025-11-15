@@ -260,7 +260,9 @@ export default function Home() {
         .filter(Boolean) // Remove any null/undefined fields
         .join(' '); // Join them into a single string
 
-        return cleanString(searchableContent).includes(cleanQuery);
+        const cleanSearchableContent = cleanString(searchableContent);
+        
+        return cleanSearchableContent.includes(cleanQuery);
     });
 }, [videos, searchQuery]);
 
@@ -499,5 +501,3 @@ export default function Home() {
 
     
 }
-
-    
