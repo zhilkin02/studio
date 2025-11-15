@@ -1,0 +1,18 @@
+diff --git a/node_modules/youtube-dl-exec/scripts/preinstall.mjs b/node_modules/youtube-dl-exec/scripts/preinstall.mjs
+index 92356c496152a5531d044f59049449a756612c95..e21245b0f498c4d29f8f2b1d3d0be3ac7b8e19c0 100644
+--- a/node_modules/youtube-dl-exec/scripts/preinstall.mjs
++++ b/node_modules/youtube-dl-exec/scripts/preinstall.mjs
+@@ -14,13 +14,3 @@
+     'Make sure it\'s installed and in your $PATH.',
+     'You can skip this check passing `YOUTUBE_DL_SKIP_PYTHON_CHECK=1`'
+   )
+-
+-if (
+-  !process.env.YOUTUBE_DL_SKIP_PYTHON_CHECK &&
+-  !process.env.npm_config_youtube_dl_skip_python_check
+-) {
+-  const { stdout, stderr } = await execa('python', ['-V'])
+-  if (stderr) throwError(stderr)
+-  if (!stdout) throwError()
+-  process.stdout.write(`  ✔ Found Python ${stdout.toString().split(' ')[1]}`)
+-}
