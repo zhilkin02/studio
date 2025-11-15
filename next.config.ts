@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
         hostname: 'yt3.googleusercontent.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
