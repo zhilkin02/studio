@@ -243,12 +243,13 @@ export default function Home() {
     if (!searchQuery) return videos;
     
     const lowercasedQuery = searchQuery.toLowerCase().trim();
+    const cleanString = (str: string) => str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
 
     return (videos as VideoFragment[]).filter(video => {
-        const phraseMatch = video.phrase && video.phrase.toLowerCase().includes(lowercasedQuery);
-        const sourceNameMatch = video.sourceName && video.sourceName.toLowerCase().includes(lowercasedQuery);
+        const phraseMatch = video.phrase && cleanString(video.phrase).includes(lowercasedQuery);
+        const sourceNameMatch = video.sourceName && cleanString(video.sourceName).includes(lowercasedQuery);
         const keywordsMatch = video.keywords && video.keywords.some(kw => 
-            kw.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim().includes(lowercasedQuery)
+            cleanString(kw).includes(lowercasedQuery)
         );
         return phraseMatch || sourceNameMatch || keywordsMatch;
     });
