@@ -396,28 +396,30 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filteredVideos as VideoFragment[]).map((video) => {
                 const isMutating = mutatingId === video.id;
+                const videoId = getYouTubeId(video.filePath);
 
                 return (
                   <Card key={video.id} className="flex flex-col">
                      <div className="p-6 pb-0 cursor-pointer" onClick={(e) => {
-                          if ((e.target as HTMLElement).closest('.card-actions')) return;
+                          if ((e.target as HTMLElement).closest('.card-actions') || (e.target as HTMLElement).closest('iframe')) return;
                           handleCardClick(video.id)
                       }}>
                          <CardTitle className="truncate text-lg">{video.phrase}</CardTitle>
                          <CardDescription className="truncate">{video.sourceName}</CardDescription>
                      </div>
                     <CardContent className="flex-grow pt-4">
-                        <div className="aspect-video w-full rounded-md overflow-hidden bg-muted cursor-pointer" onClick={(e) => {
-                             if ((e.target as HTMLElement).closest('.card-actions')) return;
-                             handleCardClick(video.id)
-                        }}>
-                             <Image
-                                src={`https://img.youtube.com/vi/${getYouTubeId(video.filePath)}/mqdefault.jpg`}
-                                alt={video.phrase || 'Video thumbnail'}
-                                width={320}
-                                height={180}
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="aspect-video w-full rounded-md overflow-hidden bg-muted">
+                           {videoId ? (
+                                <iframe 
+                                    src={`https://www.youtube.com/embed/${videoId}`} 
+                                    title={video.phrase || 'Video player'} 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                ></iframe>
+                           ) : (
+                                <div className="w-full h-full flex items-center justify-center text-muted-foreground">Неверный URL</div>
+                           )}
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
