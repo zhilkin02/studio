@@ -215,6 +215,12 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
     );
 }
 
+// Helper to escape special characters for regex
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const firestore = useFirestore();
@@ -240,15 +246,18 @@ export default function Home() {
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
-
-    const cleanQuery = searchQuery.trim().toLowerCase();
+    
+    const cleanQuery = searchQuery.trim();
 
     if (!cleanQuery) return videos;
 
+    // Escape special characters in the query for safe use in RegExp
+    const escapedQuery = escapeRegExp(cleanQuery);
+    
     // This regex will match the query if it appears at the start of a word.
     // It looks for the start of the string (^) or a space (\\s) before the query.
-    // 'i' flag makes it case-insensitive, although we already lowercase both strings.
-    const searchRegex = new RegExp(`(^|\\s)${cleanQuery}`, 'i');
+    // 'i' flag makes it case-insensitive.
+    const searchRegex = new RegExp(`(^|\\s)${escapedQuery}`, 'i');
     
     return (videos as VideoFragment[]).filter(video => {
         const searchableContent = [
@@ -260,7 +269,6 @@ export default function Home() {
         ]
         .filter(Boolean) // Remove any null/undefined fields
         .join(' ')
-        .toLowerCase()
         // We replace punctuation to avoid it breaking the "start of word" logic
         .replace(/[.,/#!$%^&*;:{}=\-_`~()!?"]/g, " ");
 
