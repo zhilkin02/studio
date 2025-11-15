@@ -245,7 +245,7 @@ export default function Home() {
     const lowercasedQuery = searchQuery.toLowerCase();
 
     return (videos as VideoFragment[]).filter(video => {
-        const phraseMatch = video.phrase.toLowerCase().includes(lowercasedQuery);
+        const phraseMatch = video.phrase && video.phrase.toLowerCase().includes(lowercasedQuery);
         const sourceNameMatch = video.sourceName && video.sourceName.toLowerCase().includes(lowercasedQuery);
         const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
         return phraseMatch || sourceNameMatch || keywordsMatch;
