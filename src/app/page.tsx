@@ -240,20 +240,30 @@ export default function Home() {
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
-    if (!searchQuery) return videos;
     
-    const lowercasedQuery = searchQuery.toLowerCase().trim();
-    const cleanString = (str: string) => str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+    // Function to safely clean and lowercase a string
+    const cleanString = (str: string) => str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()!?"]/g, "");
+
+    const cleanQuery = cleanString(searchQuery);
+
+    if (!cleanQuery) return videos;
 
     return (videos as VideoFragment[]).filter(video => {
-        const phraseMatch = video.phrase && cleanString(video.phrase).includes(lowercasedQuery);
-        const sourceNameMatch = video.sourceName && cleanString(video.sourceName).includes(lowercasedQuery);
-        const keywordsMatch = video.keywords && video.keywords.some(kw => 
-            cleanString(kw).includes(lowercasedQuery)
-        );
-        return phraseMatch || sourceNameMatch || keywordsMatch;
+        // Create a single searchable string from all relevant fields
+        const searchableContent = [
+            video.phrase,
+            video.sourceName,
+            video.sourceDetails,
+            video.voiceOver,
+            ...(video.keywords || [])
+        ]
+        .filter(Boolean) // Remove any null/undefined fields
+        .join(' '); // Join them into a single string
+
+        return cleanString(searchableContent).includes(cleanQuery);
     });
-  }, [videos, searchQuery]);
+}, [videos, searchQuery]);
+
 
   const handleCardClick = (videoId: string) => {
     router.push(`/video/${videoId}`);
@@ -489,3 +499,5 @@ export default function Home() {
 
     
 }
+
+    
