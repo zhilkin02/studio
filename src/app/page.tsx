@@ -240,16 +240,17 @@ export default function Home() {
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
-    
-    // Function to safely clean and lowercase a string
-    const cleanString = (str: string) => str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()!?"]/g, "");
 
-    const cleanQuery = cleanString(searchQuery);
+    const cleanQuery = searchQuery.trim().toLowerCase();
 
     if (!cleanQuery) return videos;
 
+    // This regex will match the query if it appears at the start of a word.
+    // It looks for the start of the string (^) or a space (\\s) before the query.
+    // 'i' flag makes it case-insensitive, although we already lowercase both strings.
+    const searchRegex = new RegExp(`(^|\\s)${cleanQuery}`, 'i');
+    
     return (videos as VideoFragment[]).filter(video => {
-        // Create a single searchable string from all relevant fields
         const searchableContent = [
             video.phrase,
             video.sourceName,
@@ -258,11 +259,12 @@ export default function Home() {
             ...(video.keywords || [])
         ]
         .filter(Boolean) // Remove any null/undefined fields
-        .join(' '); // Join them into a single string
+        .join(' ')
+        .toLowerCase()
+        // We replace punctuation to avoid it breaking the "start of word" logic
+        .replace(/[.,/#!$%^&*;:{}=\-_`~()!?"]/g, " ");
 
-        const cleanSearchableContent = cleanString(searchableContent);
-        
-        return cleanSearchableContent.includes(cleanQuery);
+        return searchRegex.test(searchableContent);
     });
 }, [videos, searchQuery]);
 
