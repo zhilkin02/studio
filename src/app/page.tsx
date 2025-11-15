@@ -393,7 +393,7 @@ export default function Home() {
                                             <AlertDialogTitle>Вы абсолютно уверены?</AlertDialogTitle>
                                             <AlertDialogDescription>
                                                 Это действие необратимо. Видео будет удалено с YouTube и из базы данных.
-                                            </Действие>
+                                            </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Отмена</AlertDialogCancel>
