@@ -46,8 +46,8 @@ const getYouTubeId = (url: string) => {
 
 interface Video {
     id: string;
-    title: string;
-    description?: string;
+    phrase: string;
+    sourceName: string;
     keywords?: string[];
     filePath: string; // This will be a YouTube URL
     uploaderId: string;
@@ -88,7 +88,7 @@ function PendingVideosList() {
 
             toast({
                 title: "Видео одобрено!",
-                description: `"${video.title}" теперь доступно для всех.`,
+                description: `"${video.phrase}" теперь доступно для всех.`,
             });
         } catch (e: any) {
             console.error("Error approving video:", e);
@@ -114,7 +114,7 @@ function PendingVideosList() {
         }
 
         try {
-            toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
+            toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.phrase}" с YouTube.` });
             const deleteResult = await deleteVideoFromYouTube({ videoId });
 
             if (!deleteResult.success) {
@@ -126,7 +126,7 @@ function PendingVideosList() {
             const docRef = doc(firestore, 'pendingVideoFragments', video.id);
             await deleteDoc(docRef);
 
-            toast({ title: "Видео отклонено и удалено", description: `"${video.title}" было полностью удалено.` });
+            toast({ title: "Видео отклонено и удалено", description: `"${video.phrase}" было полностью удалено.` });
 
         } catch (e: any) {
              const permissionError = new FirestorePermissionError({
@@ -182,8 +182,8 @@ function PendingVideosList() {
                 return (
                     <Card key={video.id}>
                         <CardHeader>
-                            <CardTitle className="truncate">{video.title}</CardTitle>
-                            {video.description && <CardDescription className="line-clamp-3">{video.description}</CardDescription>}
+                            <CardTitle className="truncate">{video.phrase}</CardTitle>
+                            <CardDescription className="line-clamp-3">{video.sourceName}</CardDescription>
                              {video.keywords && video.keywords.length > 0 && (
                                 <div className="flex flex-wrap gap-1 pt-2">
                                     {video.keywords.map(kw => <Badge key={kw} variant="outline">{kw}</Badge>)}
@@ -191,7 +191,7 @@ function PendingVideosList() {
                             )}
                         </CardHeader>
                         <CardContent>
-                            {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video" ></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
+                            {videoId ? (<iframe src={`https://www.youtube.com/embed/${videoId}`} title={video.phrase} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full rounded-md aspect-video" ></iframe>) : (<div className="w-full rounded-md aspect-video bg-muted flex items-center justify-center"><p className="text-muted-foreground">Неверный URL видео</p></div>)}
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2">
                              <AlertDialog>

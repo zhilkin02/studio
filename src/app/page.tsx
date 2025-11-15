@@ -2,8 +2,8 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
+import { Download, Search, AlertCircle, Trash2, Pencil, Loader2, Copy } from "lucide-react";
+import { Card, CardContent, CardHeader, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase';
@@ -28,6 +28,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 
 // Helper to extract YouTube video ID from URL
@@ -47,18 +48,25 @@ const getYouTubeId = (url: string) => {
 };
 
 const editFormSchema = z.object({
-  title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
+  phrase: z.string().min(1, 'Это поле обязательно для заполнения.'),
+  sourceName: z.string().min(1, 'Название фильма или сериала обязательно.'),
+  sourceDetails: z.string().optional(),
+  voiceOver: z.string().optional(),
+  timestampInSource: z.string().optional(),
   keywords: z.string().optional(),
 });
 
+
 interface VideoFragment {
     id: string;
-    title: string;
-    description: string;
-    filePath: string; // This will be a YouTube URL
+    phrase: string;
+    sourceName: string;
+    filePath: string;
     keywords?: string[];
-    uploaderId?: string; // Add this to satisfy the EditVideoForm video prop
+    uploaderId?: string;
+    sourceDetails?: string;
+    voiceOver?: string;
+    timestampInSource?: string;
 }
 
 function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: () => void }) {
@@ -69,8 +77,11 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
     const form = useForm<z.infer<typeof editFormSchema>>({
         resolver: zodResolver(editFormSchema),
         defaultValues: {
-            title: video.title,
-            description: video.description || '',
+            phrase: video.phrase || '',
+            sourceName: video.sourceName || '',
+            sourceDetails: video.sourceDetails || '',
+            voiceOver: video.voiceOver || '',
+            timestampInSource: video.timestampInSource || '',
             keywords: video.keywords?.join(', ') || '',
         },
     });
@@ -81,8 +92,7 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
 
         const docRef = doc(firestore, 'publicVideoFragments', video.id);
         const data = {
-            title: values.title,
-            description: values.description,
+            ...values,
             keywords: values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [],
         };
 
@@ -115,32 +125,71 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
+                 <FormField
                     control={form.control}
-                    name="title"
+                    name="phrase"
                     render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Название</FormLabel>
-                            <FormControl>
-                                <Input {...field} disabled={isSubmitting} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
+                      <FormItem>
+                        <FormLabel>Фраза или описание действия</FormLabel>
+                        <FormControl>
+                          <Textarea className="resize-y" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                />
-                <FormField
+                  />
+                  <FormField
                     control={form.control}
-                    name="description"
+                    name="sourceName"
                     render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Описание (необязательно)</FormLabel>
-                            <FormControl>
-                                <Textarea className="resize-y" {...field} disabled={isSubmitting} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
+                      <FormItem>
+                        <FormLabel>Название фильма или сериала</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                />
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sourceDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Сезон и серия / Часть фильма</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="voiceOver"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Озвучка</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="timestampInSource"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Время в фильме / серии</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 <FormField
                     control={form.control}
                     name="keywords"
@@ -169,6 +218,7 @@ function EditVideoForm({ video, onFinish }: { video: VideoFragment, onFinish: ()
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const firestore = useFirestore();
+  const router = useRouter();
   const { user } = useUser();
   const { toast } = useToast();
   const [mutatingId, setMutatingId] = useState<string | null>(null);
@@ -195,12 +245,16 @@ export default function Home() {
     const lowercasedQuery = searchQuery.toLowerCase();
 
     return (videos as VideoFragment[]).filter(video => {
-        const titleMatch = video.title.toLowerCase().includes(lowercasedQuery);
-        const descriptionMatch = video.description && video.description.toLowerCase().includes(lowercasedQuery);
+        const phraseMatch = video.phrase.toLowerCase().includes(lowercasedQuery);
+        const sourceNameMatch = video.sourceName && video.sourceName.toLowerCase().includes(lowercasedQuery);
         const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
-        return titleMatch || descriptionMatch || keywordsMatch;
+        return phraseMatch || sourceNameMatch || keywordsMatch;
     });
   }, [videos, searchQuery]);
+
+  const handleCardClick = (videoId: string) => {
+    router.push(`/video/${videoId}`);
+  };
   
   const handleDelete = async (video: VideoFragment) => {
     if (!firestore) return;
@@ -214,7 +268,7 @@ export default function Home() {
     }
 
     try {
-        toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.title}" с YouTube.` });
+        toast({ title: "Удаление с YouTube...", description: `Начался процесс удаления "${video.phrase}" с YouTube.` });
         const deleteResult = await deleteVideoFromYouTube({ videoId });
 
         if (!deleteResult.success) {
@@ -226,7 +280,7 @@ export default function Home() {
         
         await deleteDoc(docRef);
 
-        toast({ title: "Видео удалено", description: `"${video.title}" было полностью удалено.` });
+        toast({ title: "Видео удалено", description: `"${video.phrase}" было полностью удалено.` });
 
     } catch (e: any) {
          const permissionError = new FirestorePermissionError({
@@ -283,7 +337,7 @@ export default function Home() {
           <div className="max-w-2xl mx-auto flex gap-2">
             <Input
                 type="search"
-                placeholder="Введите ключевые слова, название фильма или описание..."
+                placeholder="Введите фразу, название фильма или ключевые слова..."
                 className="flex-grow"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -301,12 +355,12 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
               <Card key={i}>
-                <CardHeader className="p-0">
-                  <Skeleton className="w-full h-auto aspect-video rounded-t-lg" />
-                </CardHeader>
-                <CardContent className="pt-4">
+                <CardHeader>
                   <Skeleton className="h-6 w-3/4 mb-2" />
                   <Skeleton className="h-4 w-full" />
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <Skeleton className="w-full h-auto aspect-video rounded-md" />
                 </CardContent>
                 <CardFooter>
                     <Skeleton className="h-10 w-28" />
@@ -341,39 +395,33 @@ export default function Home() {
         {!loading && !error && filteredVideos.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filteredVideos as VideoFragment[]).map((video) => {
-                const videoId = getYouTubeId(video.filePath);
                 const isMutating = mutatingId === video.id;
 
                 return (
                   <Card key={video.id} className="flex flex-col">
-                    <CardHeader className="p-0">
-                      {videoId ? (
-                            <iframe
-                                src={`https://www.youtube.com/embed/${videoId}`}
-                                title={video.title}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                className="w-full rounded-t-lg aspect-video"
-                            ></iframe>
-                        ) : (
-                            <div className="w-full rounded-t-lg aspect-video bg-muted flex items-center justify-center">
-                              <p className="text-muted-foreground text-sm">Неверный формат видео</p>
-                            </div>
-                        )}
-                    </CardHeader>
-                    <CardContent className="pt-4 flex-grow">
-                      <h3 className="font-semibold text-lg truncate">{video.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
-                       {video.keywords && video.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {video.keywords.map((keyword) => (
-                            <Badge key={keyword} variant="secondary">{keyword}</Badge>
-                          ))}
+                     <div className="p-6 pb-0 cursor-pointer" onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('.card-actions')) return;
+                          handleCardClick(video.id)
+                      }}>
+                         <CardTitle className="truncate text-lg">{video.phrase}</CardTitle>
+                         <CardDescription className="truncate">{video.sourceName}</CardDescription>
+                     </div>
+                    <CardContent className="flex-grow pt-4">
+                        <div className="aspect-video w-full rounded-md overflow-hidden bg-muted cursor-pointer" onClick={(e) => {
+                             if ((e.target as HTMLElement).closest('.card-actions')) return;
+                             handleCardClick(video.id)
+                        }}>
+                             <Image
+                                src={`https://img.youtube.com/vi/${getYouTubeId(video.filePath)}/mqdefault.jpg`}
+                                alt={video.phrase}
+                                width={320}
+                                height={180}
+                                className="w-full h-full object-cover"
+                            />
                         </div>
-                      )}
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                         <Button variant="secondary" className="w-full" asChild>
+                         <Button variant="secondary" asChild>
                             <Link href={`https://savefrom.net/` + video.filePath} target="_blank" rel="noopener noreferrer">
                                 <Download className="mr-2 h-4 w-4" />
                                 Скачать
@@ -381,7 +429,7 @@ export default function Home() {
                         </Button>
 
                          {user?.isAdmin && (
-                            <div className="flex gap-2 ml-2">
+                            <div className="flex gap-2 ml-2 card-actions">
                                 <Button variant="outline" size="icon" disabled={isMutating} onClick={() => setEditingVideo(video)}>
                                     <Pencil className="h-4 w-4" />
                                     <span className="sr-only">Редактировать</span>
@@ -421,10 +469,10 @@ export default function Home() {
 
        {editingVideo && (
             <Dialog open={!!editingVideo} onOpenChange={(isOpen) => !isOpen && setEditingVideo(null)}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Редактировать видео</DialogTitle>
-                    <DialogDescription>Внесите изменения в название, описание или ключевые слова видео.</DialogDescription>
+                    <DialogDescription>Внесите изменения в данные о видеофрагменте.</DialogDescription>
                 </DialogHeader>
                 <EditVideoForm video={editingVideo} onFinish={() => setEditingVideo(null)} />
             </DialogContent>

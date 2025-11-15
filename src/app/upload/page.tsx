@@ -24,25 +24,28 @@ import { useDebounce } from 'use-debounce';
 
 
 const formSchema = z.object({
-  title: z.string().min(5, 'Название должно быть не менее 5 символов.').max(100, 'Название должно быть не более 100 символов.'),
-  description: z.string().max(5000, 'Описание должно быть не более 5000 символов.').optional(),
+  phrase: z.string().min(1, 'Это поле обязательно для заполнения.'),
+  sourceName: z.string().min(1, 'Название фильма или сериала обязательно.'),
+  sourceDetails: z.string().optional(),
+  voiceOver: z.string().optional(),
+  timestampInSource: z.string().optional(),
   keywords: z.string().optional(),
 });
 
 function KeywordGenerator({ control, setValue }: { control: any, setValue: any }) {
     const [isGenerating, setIsGenerating] = useState(false);
-    const title = useWatch({ control, name: 'title' });
-    const description = useWatch({ control, name: 'description' });
+    const phrase = useWatch({ control, name: 'phrase' });
+    const sourceName = useWatch({ control, name: 'sourceName' });
 
-    const [debouncedTitle] = useDebounce(title, 1000);
-    const [debouncedDescription] = useDebounce(description, 1000);
+    const [debouncedPhrase] = useDebounce(phrase, 1500);
+    const [debouncedSourceName] = useDebounce(sourceName, 1500);
     
     const handleGenerateKeywords = useCallback(async () => {
-        if (!debouncedTitle || debouncedTitle.length < 5) return;
+        if (!debouncedPhrase || debouncedPhrase.length < 2) return;
 
         setIsGenerating(true);
         try {
-            const result = await generateKeywords({ title: debouncedTitle, description: debouncedDescription });
+            const result = await generateKeywords({ phrase: debouncedPhrase, sourceName: debouncedSourceName });
             if (result.keywords) {
                 setValue('keywords', result.keywords, { shouldValidate: true });
             }
@@ -52,7 +55,7 @@ function KeywordGenerator({ control, setValue }: { control: any, setValue: any }
         } finally {
             setIsGenerating(false);
         }
-    }, [debouncedTitle, debouncedDescription, setValue]);
+    }, [debouncedPhrase, debouncedSourceName, setValue]);
 
     useEffect(() => {
         handleGenerateKeywords();
@@ -90,8 +93,11 @@ export default function UploadPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
-      description: '',
+      phrase: '',
+      sourceName: '',
+      sourceDetails: '',
+      voiceOver: '',
+      timestampInSource: '',
       keywords: '',
     },
   });
@@ -136,8 +142,8 @@ export default function UploadPage() {
             setUploadProgress(25);
 
             const result = await uploadVideoToYouTube({
-                title: values.title,
-                description: values.description || '', // Pass empty string if undefined
+                title: `${values.sourceName} | ${values.phrase}`, // A more descriptive YouTube title
+                description: `Фрагмент из "${values.sourceName}".\nФраза: ${values.phrase}`,
                 videoDataUri: videoDataUri,
             });
             
@@ -170,8 +176,11 @@ export default function UploadPage() {
             const keywords = values.keywords ? values.keywords.split(',').map(kw => kw.trim()).filter(Boolean) : [];
 
             const docData = {
-                title: values.title,
-                description: values.description || '',
+                phrase: values.phrase,
+                sourceName: values.sourceName,
+                sourceDetails: values.sourceDetails || '',
+                voiceOver: values.voiceOver || '',
+                timestampInSource: values.timestampInSource || '',
                 keywords: keywords,
                 filePath: youtubeUrl,
                 uploaderId: user.uid,
@@ -293,44 +302,80 @@ export default function UploadPage() {
                         </AlertDescription>
                     </Alert>
                 )}
-
+            
               <FormField
                 control={form.control}
-                name="title"
+                name="phrase"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Название</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Например, 'Та самая сцена из...' " {...field} disabled={isSubmitting} />
-                    </FormControl>
-                    <FormDescription>
-                      Краткое и емкое название для вашего фрагмента.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Описание (необязательно)</FormLabel>
+                    <FormLabel>Фраза или описание действия</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Опишите, что происходит в видео, какие эмоции оно вызывает или чем оно примечательно."
-                        className="resize-none"
+                        placeholder="Введите точную фразу из видео. Если слов нет, опишите действие или эмоцию."
+                        className="resize-y"
                         {...field}
                         disabled={isSubmitting}
                       />
                     </FormControl>
-                     <FormDescription>
-                      Подробное описание поможет другим пользователям найти ваше видео.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="sourceName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Название фильма или сериала</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Например, 'Криминальное чтиво'" {...field} disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <FormField
+                    control={form.control}
+                    name="sourceDetails"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Сезон и серия / Часть фильма (необязательно)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="S01E05 / Часть 2" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="timestampInSource"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Время в фильме / серии (необязательно)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="01:23:45" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+              </div>
+
+               <FormField
+                control={form.control}
+                name="voiceOver"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Озвучка (необязательно)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Дубляж, LostFilm, Кубик в Кубе" {...field} disabled={isSubmitting} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="keywords"
@@ -340,7 +385,7 @@ export default function UploadPage() {
                     <div className="relative">
                         <FormControl>
                         <Input
-                            placeholder="смех, мем, цитата, ирония"
+                            placeholder="AI сгенерирует ключевые слова здесь..."
                             {...field}
                             disabled={isSubmitting}
                         />

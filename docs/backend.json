@@ -46,20 +46,32 @@
           "type": "string",
           "description": "Unique identifier for the VideoFragment entity."
         },
-        "title": {
+        "phrase": {
           "type": "string",
-          "description": "The title of the video fragment."
+          "description": "The quote or phrase spoken in the video, or a description of the action/emotion if there are no words."
         },
-        "description": {
+        "sourceName": {
           "type": "string",
-          "description": "A description of the video fragment."
+          "description": "The name of the movie or series the fragment is from."
+        },
+        "sourceDetails": {
+          "type": "string",
+          "description": "Optional. The season and episode (e.g., 'S02E05') or the part of the movie."
+        },
+        "voiceOver": {
+          "type": "string",
+          "description": "Optional. The voice-over studio or dubbing information (e.g., 'Дубляж')."
+        },
+        "timestampInSource": {
+          "type": "string",
+          "description": "Optional. The timestamp within the movie or episode (e.g., '01:23:45')."
         },
         "keywords": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Keywords for the video fragment to aid in search."
+          "description": "Keywords for the video fragment to aid in search, including variations of the phrase."
         },
         "uploadDate": {
           "type": "string",
@@ -72,7 +84,7 @@
         },
         "filePath": {
           "type": "string",
-          "description": "The file path or URL where the video fragment is stored."
+          "description": "The file path or URL where the video fragment is stored (YouTube URL)."
         },
         "status": {
           "type": "string",
@@ -81,7 +93,8 @@
       },
       "required": [
         "id",
-        "title",
+        "phrase",
+        "sourceName",
         "uploadDate",
         "uploaderId",
         "filePath",
