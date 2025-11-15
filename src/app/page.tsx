@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Search, AlertCircle, Trash2, Pencil, Loader2, ChevronDown } from "lucide-react";
+import { Copy, Search, AlertCircle, Trash2, Pencil, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -27,7 +27,6 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
 // Helper to extract YouTube video ID from URL
@@ -241,24 +240,43 @@ export default function Home() {
     }
   };
 
+  const handleCopyLink = (videoPath: string) => {
+    navigator.clipboard.writeText(videoPath)
+        .then(() => {
+            toast({
+                title: "Ссылка скопирована!",
+                description: "Вставьте ее в любой сервис для скачивания видео с YouTube.",
+            });
+        })
+        .catch(() => {
+            toast({
+                variant: "destructive",
+                title: "Ошибка",
+                description: "Не удалось скопировать ссылку.",
+            });
+        });
+    };
+
 
   return (
     <>
-      <section className="relative w-full h-48 md:h-64 -mx-4 sm:mx-0">
-          {contentLoading || !heroImageUrl ? <Skeleton className="w-full h-full" /> : (
-                <Image
-                  src={heroImageUrl}
-                  alt="Hero image"
-                  fill
-                  style={{ 
-                      objectFit: heroImageObjectFit as 'cover' | 'contain' | 'fill' | 'none' | 'scale-down', 
-                      objectPosition: heroImageObjectPosition 
-                  }}
-                  priority
-                  data-ai-hint="retro tv"
-              />
-          )}
-      </section>
+      <div className="container mx-auto px-4">
+        <section className="relative w-full h-48 md:h-64 -mx-4 sm:mx-0">
+            {contentLoading || !heroImageUrl ? <Skeleton className="w-full h-full" /> : (
+                  <Image
+                    src={heroImageUrl}
+                    alt="Hero image"
+                    fill
+                    style={{ 
+                        objectFit: heroImageObjectFit as 'cover' | 'contain' | 'fill' | 'none' | 'scale-down', 
+                        objectPosition: heroImageObjectPosition 
+                    }}
+                    priority
+                    data-ai-hint="retro tv"
+                />
+            )}
+        </section>
+      </div>
       <div className="container mx-auto px-4 pb-8">
         <section className="text-center py-8">
             <EditableText
@@ -342,10 +360,6 @@ export default function Home() {
                 const videoId = getYouTubeId(video.filePath);
                 const isMutating = mutatingId === video.id;
 
-                const downloadUrlY2mate = `https://www.y2mate.com/youtube/${videoId}`;
-                const downloadUrlSaveFrom = `https://savefrom.net/https://www.youtube.com/watch?v=${videoId}`;
-
-
                 return (
                   <Card key={video.id} className="flex flex-col">
                     <CardHeader className="p-0">
@@ -375,27 +389,10 @@ export default function Home() {
                       )}
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="secondary" className="w-full">
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Скачать
-                                    <ChevronDown className="ml-auto h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuItem asChild>
-                                    <a href={downloadUrlY2mate} target="_blank" rel="noopener noreferrer">
-                                        Сервис 1 (y2mate)
-                                    </a>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                     <a href={downloadUrlSaveFrom} target="_blank" rel="noopener noreferrer">
-                                        Сервис 2 (savefrom)
-                                    </a>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button variant="secondary" className="w-full" onClick={() => handleCopyLink(video.filePath)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Копировать ссылку
+                        </Button>
 
                          {user?.isAdmin && (
                             <div className="flex gap-2 ml-2">
@@ -452,3 +449,4 @@ export default function Home() {
   );
 
     
+}
