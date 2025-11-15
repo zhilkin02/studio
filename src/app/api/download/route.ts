@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ytdl from 'ytdl-core';
-import { PassThrough } from 'stream';
+import { Readable } from 'stream';
 
-// Do not use edge runtime, ytdl-core is not compatible with it.
+// Helper to convert Node.js stream to Web Stream
+function toReadableStream(nodeStream: NodeJS.ReadableStream): ReadableStream {
+    return new ReadableStream({
+        start(controller) {
+            nodeStream.on("data", (chunk) => controller.enqueue(chunk));
+            nodeStream.on("end", () => controller.close());
+            nodeStream.on("error", (err) => controller.error(err));
+        },
+    });
+}
+
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -17,32 +27,35 @@ export async function GET(req: NextRequest) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const info = await ytdl.getInfo(videoUrl);
 
+    // Prefer a format that has both video and audio. 720p is usually a good compromise.
     const format = ytdl.chooseFormat(info.formats, {
-      quality: 'highest',
-      filter: (f) => f.hasVideo && f.hasAudio,
+      quality: 'highestvideo',
+      filter: (f) => f.container === 'mp4' && f.hasAudio && f.hasVideo,
     });
     
-    if (!format) {
-       return new NextResponse('Could not find a suitable video format with audio.', { status: 500 });
+     if (!format) {
+       // Fallback to highest quality if no combined format is found (might be audio only or video only)
+       const fallbackFormat = ytdl.chooseFormat(info.formats, { quality: 'highest' });
+        if (!fallbackFormat) {
+          return new NextResponse('Could not find any suitable video format.', { status: 500 });
+        }
+         return new NextResponse('Could not find a format with both video and audio. High-quality streams might be separate.', { status: 500 });
     }
 
     const videoStream = ytdl(videoUrl, { format });
-    const passThrough = new PassThrough();
-    videoStream.pipe(passThrough);
+    const webStream = toReadableStream(videoStream);
 
-    const safeTitle = title.replace(/[^a-z0-9_ -]/gi, '_');
+    const safeTitle = (title).replace(/[^a-z0-9_ -]/gi, '_');
     const filename = `${safeTitle}.mp4`;
 
     const headers = new Headers();
     headers.set('Content-Disposition', `attachment; filename="${filename}"`);
     headers.set('Content-Type', 'video/mp4');
 
-    // @ts-ignore - ReadableStream is compatible with PassThrough
-    return new NextResponse(passThrough, { headers });
+    return new NextResponse(webStream, { headers });
 
   } catch (error: any) {
     console.error(`Error processing download for video ID ${videoId}:`, error);
-    // Provide a more informative error response to the client
     const errorMessage = error.message || 'An unknown error occurred';
     return new NextResponse(
         `Failed to download video. Reason: ${errorMessage}`, 
