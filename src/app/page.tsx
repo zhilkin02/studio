@@ -242,12 +242,14 @@ export default function Home() {
     if (!videos) return [];
     if (!searchQuery) return videos;
     
-    const lowercasedQuery = searchQuery.toLowerCase();
+    const lowercasedQuery = searchQuery.toLowerCase().trim();
 
     return (videos as VideoFragment[]).filter(video => {
         const phraseMatch = video.phrase && video.phrase.toLowerCase().includes(lowercasedQuery);
         const sourceNameMatch = video.sourceName && video.sourceName.toLowerCase().includes(lowercasedQuery);
-        const keywordsMatch = video.keywords && video.keywords.some(kw => kw.toLowerCase().includes(lowercasedQuery));
+        const keywordsMatch = video.keywords && video.keywords.some(kw => 
+            kw.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim().includes(lowercasedQuery)
+        );
         return phraseMatch || sourceNameMatch || keywordsMatch;
     });
   }, [videos, searchQuery]);
@@ -424,7 +426,7 @@ export default function Home() {
                     </CardContent>
                     <CardFooter className="flex justify-between items-center">
                          <Button variant="secondary" asChild>
-                            <Link href={`https://savefrom.net/` + video.filePath} target="_blank" rel="noopener noreferrer">
+                            <Link href={`https://savefrom.net/${video.filePath}`} target="_blank" rel="noopener noreferrer">
                                 <Download className="mr-2 h-4 w-4" />
                                 Скачать
                             </Link>
