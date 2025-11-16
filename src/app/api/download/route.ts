@@ -1,49 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ytdl from 'ytdl-core';
+import { YtDlpExec, YtDlpError } from 'yt-dlp-exec';
 
-// Это важно для стриминга на Vercel
 export const dynamic = 'force-dynamic';
+
+async function validateYouTubeUrl(url: string | null): Promise<boolean> {
+  if (!url) return false;
+  // ytdl-core's validator is good enough for a basic check
+  return ytdl.validateURL(url);
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const videoUrl = searchParams.get('url');
 
-  if (!videoUrl || !ytdl.validateURL(videoUrl)) {
+  if (!await validateYouTubeUrl(videoUrl)) {
     return NextResponse.json({ error: 'A valid YouTube URL is required' }, { status: 400 });
   }
 
   try {
-    const info = await ytdl.getInfo(videoUrl);
-    const title = info.videoDetails.title;
+    // 1. Get metadata first to extract the title
+    const metadata = await YtDlpExec.execPromise(videoUrl!, {
+      dumpSingleJson: true,
+      noWarnings: true,
+      noCheckCertificates: true,
+      preferFreeFormats: true,
+      youtubeSkipDashManifest: true,
+    });
+    
+    const title = metadata.title || 'video';
+    const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
-    // Создаем "безопасное" имя файла
-    const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100) || 'video';
-
-    const videoStream = ytdl(videoUrl, {
-      quality: 'highestvideo',
-      filter: 'videoandaudio',
+    // 2. Execute yt-dlp again to get the video stream
+    const videoStream = YtDlpExec(videoUrl!, {
+      noCheckCertificates: true,
+      noWarnings: true,
+      format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      output: '-', // Pipe to stdout
     });
 
-    // Преобразуем Node.js Stream в Web Stream, который понимает Next.js/Vercel
+    if (!videoStream.stdout) {
+      throw new Error('Could not get video stream from yt-dlp');
+    }
+
+    // Convert Node.js Stream to Web Stream
     const webStream = new ReadableStream({
       start(controller) {
-        videoStream.on('data', (chunk) => {
+        videoStream.stdout.on('data', (chunk) => {
           controller.enqueue(chunk);
         });
-        videoStream.on('end', () => {
+        videoStream.stdout.on('end', () => {
           controller.close();
         });
         videoStream.on('error', (err) => {
-          console.error('ytdl stream error:', err);
+          console.error('yt-dlp process error:', err);
+          controller.error(err);
+        });
+         videoStream.stdout.on('error', (err) => {
+          console.error('yt-dlp stdout error:', err);
           controller.error(err);
         });
       },
       cancel() {
-        videoStream.destroy();
+        videoStream.kill();
       },
     });
 
-    // Создаем стриминговый ответ
     return new Response(webStream, {
       status: 200,
       headers: {
@@ -53,10 +75,14 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('ytdl error:', error);
-    return NextResponse.json(
-      { error: `Failed to download video. ${error.message || 'Unknown error from ytdl-core'}` },
-      { status: 500 }
-    );
+    console.error('yt-dlp error:', error);
+    let errorMessage = 'Failed to process video.';
+    if (error instanceof YtDlpError) {
+        errorMessage = `yt-dlp failed: ${error.message}. Stderr: ${error.stderr}`;
+    } else if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
