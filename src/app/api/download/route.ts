@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       noCheckCertificate: true,
     });
     
-    const title = metadata.title || 'video';
+    const title = (metadata as any).title || 'video';
     
     // Создаем "безопасное" имя файла
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
