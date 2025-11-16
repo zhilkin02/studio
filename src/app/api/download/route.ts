@@ -1,3 +1,4 @@
+
 import {NextRequest, NextResponse} from 'next/server';
 import youtubedl from 'youtube-dl-exec';
 import { Readable } from 'stream';
@@ -43,13 +44,13 @@ export async function GET(request: NextRequest) {
     // Преобразуем Node.js Stream в Web Stream
     const webStream = new ReadableStream({
       start(controller) {
-        videoStream.stdout.on('data', (chunk: Buffer) => {
+        videoStream.stdout!.on('data', (chunk: Buffer) => {
           controller.enqueue(chunk);
         });
-        videoStream.stdout.on('end', () => {
+        videoStream.stdout!.on('end', () => {
           controller.close();
         });
-        videoStream.stdout.on('error', (err: Error) => {
+        videoStream.stdout!.on('error', (err: Error) => {
           controller.error(err);
         });
         videoStream.on('error', (err: Error) => {
