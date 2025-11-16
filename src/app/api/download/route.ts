@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import * as YtDlpExec from 'yt-dlp-exec';
+import YtDlpExec, { exec as YtDlpExecStream, YtDlpError } from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get metadata first to extract the title
-    const metadata = await YtDlpExec.default(videoUrl!, {
+    const metadata = await YtDlpExec(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
       noCheckCertificate: true,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
     // 2. Execute yt-dlp again to get the video stream
-    const videoStreamProcess = YtDlpExec.exec(videoUrl!, {
+    const videoStreamProcess = YtDlpExecStream(videoUrl!, {
       noCheckCertificate: true,
       noWarnings: true,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (!videoStreamProcess.stdout) {
       throw new Error('Could not get video stream from yt-dlp');
     }
-
+    
     // Convert Node.js Stream to Web Stream
     const webStream = new ReadableStream({
       start(controller) {
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('yt-dlp error:', error);
     let errorMessage = 'Failed to process video.';
-    if (error instanceof YtDlpExec.YtDlpError) {
+    if (error instanceof YtDlpError) {
         errorMessage = `yt-dlp failed: ${error.message}. Stderr: ${error.stderr}`;
     } else if (error instanceof Error) {
         errorMessage = error.message;
