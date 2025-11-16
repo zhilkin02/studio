@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get metadata first to extract the title
-    const metadata = await YtDlpExec.execPromise(videoUrl!, {
+    const metadata = await YtDlpExec(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
       noCheckCertificates: true,
