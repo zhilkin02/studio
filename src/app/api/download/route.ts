@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import YtDlpExec, { exec as YtDlpExecStream } from 'yt-dlp-exec';
+import * as YtDlpExec from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get metadata first to extract the title
-    const metadata = await YtDlpExec(videoUrl!, {
+    const metadata = await YtDlpExec.default(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
       noCheckCertificate: true,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
     // 2. Execute yt-dlp again to get the video stream
-    const videoStreamProcess = YtDlpExecStream(videoUrl!, {
+    const videoStreamProcess = YtDlpExec.exec(videoUrl!, {
       noCheckCertificate: true,
       noWarnings: true,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
@@ -48,17 +48,22 @@ export async function GET(request: NextRequest) {
     // Convert Node.js Stream to Web Stream
     const webStream = new ReadableStream({
       start(controller) {
-        videoStreamProcess.stdout!.on('data', (chunk) => {
+        if (!videoStreamProcess.stdout) {
+          controller.error(new Error('Stdout is not available'));
+          return;
+        }
+
+        videoStreamProcess.stdout.on('data', (chunk) => {
           controller.enqueue(chunk);
         });
-        videoStreamProcess.stdout!.on('end', () => {
+        videoStreamProcess.stdout.on('end', () => {
           controller.close();
         });
         videoStreamProcess.on('error', (err) => {
           console.error('yt-dlp process error:', err);
           controller.error(err);
         });
-         videoStreamProcess.stdout!.on('error', (err) => {
+         videoStreamProcess.stdout.on('error', (err) => {
           console.error('yt-dlp stdout error:', err);
           controller.error(err);
         });
