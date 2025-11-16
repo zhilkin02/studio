@@ -1,6 +1,6 @@
 
 import {NextRequest, NextResponse} from 'next/server';
-import youtubedl from 'youtube-dl-exec';
+import {youtubedl, YoutubedlError} from 'youtube-dl-exec';
 import { Readable } from 'stream';
 import path from 'path';
 
@@ -15,17 +15,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({error: 'URL is required'}, {status: 400});
   }
 
+  // Определяем путь к yt-dlp в зависимости от среды
+  const ytDlpPath = process.env.NODE_ENV === 'development'
+      // В режиме разработки, node_modules находится в корне проекта
+      ? path.resolve(process.cwd(), 'node_modules', 'youtube-dl-exec', 'bin', 'yt-dlp')
+      // В продакшене на Vercel, node_modules находится в другом месте
+      : path.resolve(process.cwd(), 'node_modules', 'yt-dlp-exec', 'bin', 'yt-dlp');
+
+
   try {
-    // Определяем путь к бинарному файлу yt-dlp внутри серверной функции Vercel
-    const ytDlpPath = path.resolve(process.cwd(), 'node_modules/youtube-dl-exec/bin/yt-dlp');
-    
     // Получаем информацию о видео, чтобы узнать его название
     const metadata = await youtubedl(videoUrl, {
       dumpSingleJson: true,
       noWarnings: true,
       callHome: false,
       noCheckCertificates: true,
-      youtubeDlPath: ytDlpPath,
     });
     
     const title = (metadata as any).title || 'video';
@@ -40,8 +44,10 @@ export async function GET(request: NextRequest) {
       noWarnings: true,
       callHome: false,
       noCheckCertificates: true,
+    }, { 
+      stdio: ['ignore', 'pipe', 'ignore'], // stdin, stdout, stderr
       youtubeDlPath: ytDlpPath,
-    }, { stdio: ['ignore', 'pipe', 'ignore'] }); // stdin, stdout, stderr
+    });
 
     if (!videoStream.stdout) {
          throw new Error("Could not get video stream from youtube-dl-exec.");
