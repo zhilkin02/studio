@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import YtDlpExec from 'yt-dlp-exec';
+import YtDlpExec, { exec as YtDlpExecStream } from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
     // 2. Execute yt-dlp again to get the video stream
-    const videoStreamProcess = YtDlpExec.exec(videoUrl!, {
+    const videoStreamProcess = YtDlpExecStream(videoUrl!, {
       noCheckCertificate: true,
       noWarnings: true,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
