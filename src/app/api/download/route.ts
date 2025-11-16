@@ -48,17 +48,17 @@ export async function GET(request: NextRequest) {
     // Convert Node.js Stream to Web Stream
     const webStream = new ReadableStream({
       start(controller) {
-        videoStreamProcess.stdout.on('data', (chunk) => {
+        videoStreamProcess.stdout!.on('data', (chunk) => {
           controller.enqueue(chunk);
         });
-        videoStreamProcess.stdout.on('end', () => {
+        videoStreamProcess.stdout!.on('end', () => {
           controller.close();
         });
         videoStreamProcess.on('error', (err) => {
           console.error('yt-dlp process error:', err);
           controller.error(err);
         });
-         videoStreamProcess.stdout.on('error', (err) => {
+         videoStreamProcess.stdout!.on('error', (err) => {
           console.error('yt-dlp stdout error:', err);
           controller.error(err);
         });
