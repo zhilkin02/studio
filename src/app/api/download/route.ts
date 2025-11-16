@@ -1,6 +1,6 @@
 
 import {NextRequest, NextResponse} from 'next/server';
-import {youtubedl, YoutubedlError} from 'youtube-dl-exec';
+import {youtubeDl, YoutubedlError} from 'youtube-dl-exec';
 import { Readable } from 'stream';
 import path from 'path';
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Получаем информацию о видео, чтобы узнать его название
-    const metadata = await youtubedl(videoUrl, {
+    const metadata = await youtubeDl(videoUrl, {
       dumpSingleJson: true,
       noWarnings: true,
       callHome: false,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
     // Получаем поток (stream) видеофайла
-    const videoStream = youtubedl.exec(videoUrl, {
+    const videoStream = youtubeDl.exec(videoUrl, {
       output: '-', // Выводить в stdout
       format: 'best[ext=mp4]', // Лучший mp4
       noWarnings: true,
