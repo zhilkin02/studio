@@ -1,5 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import YtDlpExec, { YtDlpError } from 'yt-dlp-exec';
+import YtDlpExec from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,6 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get metadata first to extract the title
-    // The library will download yt-dlp binary on the first run
     const metadata = await YtDlpExec.execPromise(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('yt-dlp error:', error);
     let errorMessage = 'Failed to process video.';
-    if (error instanceof YtDlpError) {
+    if (error instanceof YtDlpExec.YtDlpError) {
         errorMessage = `yt-dlp failed: ${error.message}. Stderr: ${error.stderr}`;
     } else if (error instanceof Error) {
         errorMessage = error.message;
