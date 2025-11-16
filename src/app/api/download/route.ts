@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ytdl from 'ytdl-core';
 import { YtDlpExec, YtDlpError } from 'yt-dlp-exec';
+import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
 
 async function validateYouTubeUrl(url: string | null): Promise<boolean> {
   if (!url) return false;
-  // ytdl-core's validator is good enough for a basic check
-  return ytdl.validateURL(url);
+  // A simple regex check is good enough for a basic validation
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+  return youtubeRegex.test(url);
 }
 
 export async function GET(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // 1. Get metadata first to extract the title
+    // The library will download yt-dlp binary on the first run
     const metadata = await YtDlpExec.execPromise(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
@@ -32,37 +34,37 @@ export async function GET(request: NextRequest) {
     const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
 
     // 2. Execute yt-dlp again to get the video stream
-    const videoStream = YtDlpExec(videoUrl!, {
+    const videoStreamProcess = YtDlpExec(videoUrl!, {
       noCheckCertificates: true,
       noWarnings: true,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
       output: '-', // Pipe to stdout
     });
 
-    if (!videoStream.stdout) {
+    if (!videoStreamProcess.stdout) {
       throw new Error('Could not get video stream from yt-dlp');
     }
 
     // Convert Node.js Stream to Web Stream
     const webStream = new ReadableStream({
       start(controller) {
-        videoStream.stdout.on('data', (chunk) => {
+        videoStreamProcess.stdout.on('data', (chunk) => {
           controller.enqueue(chunk);
         });
-        videoStream.stdout.on('end', () => {
+        videoStreamProcess.stdout.on('end', () => {
           controller.close();
         });
-        videoStream.on('error', (err) => {
+        videoStreamProcess.on('error', (err) => {
           console.error('yt-dlp process error:', err);
           controller.error(err);
         });
-         videoStream.stdout.on('error', (err) => {
+         videoStreamProcess.stdout.on('error', (err) => {
           console.error('yt-dlp stdout error:', err);
           controller.error(err);
         });
       },
       cancel() {
-        videoStream.kill();
+        videoStreamProcess.kill();
       },
     });
 
