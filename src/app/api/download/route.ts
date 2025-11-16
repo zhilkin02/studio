@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import YtDlpExec, { exec, YtDlpError } from 'yt-dlp-exec';
+import YtDlpExec, { exec } from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
@@ -84,7 +84,8 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('yt-dlp error:', error);
     let errorMessage = 'Failed to process video.';
-    if (error instanceof YtDlpError) {
+    // Check if the error object has a 'stderr' property, which is characteristic of YtDlpError
+    if (error && typeof error.stderr === 'string') {
         errorMessage = `yt-dlp failed: ${error.message}. Stderr: ${error.stderr}`;
     } else if (error instanceof Error) {
         errorMessage = error.message;
