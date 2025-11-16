@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  experimental: {
+    // This is the key change to fix the ENOENT error
+    // It ensures that the yt-dlp binary is included in the serverless function.
+    serverComponentsExternalPackages: ['yt-dlp-exec'],
+  },
 };
 
 export default nextConfig;
