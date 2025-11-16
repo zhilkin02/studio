@@ -1,68 +1,45 @@
-
-import {NextRequest, NextResponse} from 'next/server';
-import { youtubeDl } from 'youtube-dl-exec';
-import YoutubedlError from 'youtube-dl-exec';
-import { Readable } from 'stream';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
+import ytdl from 'ytdl-core';
 
 // Это важно для стриминга на Vercel
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const {searchParams} = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const videoUrl = searchParams.get('url');
 
-  if (!videoUrl) {
-    return NextResponse.json({error: 'URL is required'}, {status: 400});
+  if (!videoUrl || !ytdl.validateURL(videoUrl)) {
+    return NextResponse.json({ error: 'A valid YouTube URL is required' }, { status: 400 });
   }
-  
+
   try {
-    // Получаем информацию о видео, чтобы узнать его название
-    const metadata = await youtubeDl(videoUrl, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      callHome: false,
-      noCheckCertificates: true,
-    });
-    
-    const title = (metadata as any).title || 'video';
-    
+    const info = await ytdl.getInfo(videoUrl);
+    const title = info.videoDetails.title;
+
     // Создаем "безопасное" имя файла
-    const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100);
+    const safeFilename = title.replace(/[^a-z0-9_.-]/gi, '_').substring(0, 100) || 'video';
 
-    // Получаем поток (stream) видеофайла
-    const videoStream = youtubeDl.exec(videoUrl, {
-      output: '-', // Выводить в stdout
-      format: 'best[ext=mp4]', // Лучший mp4
-      noWarnings: true,
-      callHome: false,
-      noCheckCertificates: true,
-    }, { 
-      stdio: ['ignore', 'pipe', 'ignore'], // stdin, stdout, stderr
+    const videoStream = ytdl(videoUrl, {
+      quality: 'highestvideo',
+      filter: 'videoandaudio',
     });
 
-    if (!videoStream.stdout) {
-         throw new Error("Could not get video stream from youtube-dl-exec.");
-    }
-    
-    // Преобразуем Node.js Stream в Web Stream
+    // Преобразуем Node.js Stream в Web Stream, который понимает Next.js/Vercel
     const webStream = new ReadableStream({
       start(controller) {
-        videoStream.stdout!.on('data', (chunk: Buffer) => {
+        videoStream.on('data', (chunk) => {
           controller.enqueue(chunk);
         });
-        videoStream.stdout!.on('end', () => {
+        videoStream.on('end', () => {
           controller.close();
         });
-        videoStream.stdout!.on('error', (err: Error) => {
+        videoStream.on('error', (err) => {
+          console.error('ytdl stream error:', err);
           controller.error(err);
-        });
-        videoStream.on('error', (err: Error) => {
-           controller.error(err);
         });
       },
       cancel() {
-        videoStream.kill();
+        videoStream.destroy();
       },
     });
 
@@ -74,9 +51,12 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="${safeFilename}.mp4"`,
       },
     });
+
   } catch (error: any) {
-    console.error('yt-dlp error:', error);
-    const errorMessage = error.stderr || error.message || 'Unknown error from yt-dlp';
-    return NextResponse.json({error: `Failed to download video. ${errorMessage}`}, {status: 500});
+    console.error('ytdl error:', error);
+    return NextResponse.json(
+      { error: `Failed to download video. ${error.message || 'Unknown error from ytdl-core'}` },
+      { status: 500 }
+    );
   }
 }
