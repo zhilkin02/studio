@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       dumpSingleJson: true,
       noWarnings: true,
       callHome: false,
-      noCheckCertificate: true,
+      noCheckCertificates: true,
     });
     
     const title = (metadata as any).title || 'video';
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       format: 'best[ext=mp4]', // Лучший mp4
       noWarnings: true,
       callHome: false,
-      noCheckCertificate: true,
+      noCheckCertificates: true,
     }, { stdio: ['ignore', 'pipe', 'ignore'] }); // stdin, stdout, stderr
 
     if (!videoStream.stdout) {
