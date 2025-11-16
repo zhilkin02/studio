@@ -2,6 +2,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import youtubedl from 'youtube-dl-exec';
 import { Readable } from 'stream';
+import path from 'path';
 
 // Это важно для стриминга на Vercel
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Определяем путь к бинарному файлу yt-dlp внутри серверной функции Vercel
+    const ytDlpPath = path.resolve(process.cwd(), 'node_modules/youtube-dl-exec/bin/yt-dlp');
+    
     // Получаем информацию о видео, чтобы узнать его название
     const metadata = await youtubedl(videoUrl, {
       dumpSingleJson: true,
       noWarnings: true,
       callHome: false,
       noCheckCertificates: true,
+      youtubeDlPath: ytDlpPath,
     });
     
     const title = (metadata as any).title || 'video';
@@ -35,6 +40,7 @@ export async function GET(request: NextRequest) {
       noWarnings: true,
       callHome: false,
       noCheckCertificates: true,
+      youtubeDlPath: ytDlpPath,
     }, { stdio: ['ignore', 'pipe', 'ignore'] }); // stdin, stdout, stderr
 
     if (!videoStream.stdout) {

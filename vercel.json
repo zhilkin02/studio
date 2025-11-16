@@ -1,7 +1,8 @@
 {
   "functions": {
     "app/api/download/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "includeFiles": "node_modules/youtube-dl-exec/bin/yt-dlp"
     }
   }
 }
