@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const metadata = await YtDlpExec(videoUrl!, {
       dumpSingleJson: true,
       noWarnings: true,
-      noCheckCertificates: true,
+      noCheckCertificate: true,
       preferFreeFormats: true,
       youtubeSkipDashManifest: true,
     });
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Execute yt-dlp again to get the video stream
     const videoStreamProcess = YtDlpExec(videoUrl!, {
-      noCheckCertificates: true,
+      noCheckCertificate: true,
       noWarnings: true,
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
       output: '-', // Pipe to stdout
