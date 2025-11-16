@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { YtDlpExec, YtDlpError } from 'yt-dlp-exec';
+import YtDlpExec, { YtDlpError } from 'yt-dlp-exec';
 import { Readable } from 'stream';
 
 export const dynamic = 'force-dynamic';
